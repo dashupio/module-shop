@@ -2,12 +2,12 @@
 const { Module } = require('@dashup/module');
 
 // import base
-const HostPage = require('./pages/host');
+const CheckoutPage = require('./pages/checkout');
 
 /**
  * export module
  */
-class HostModule extends Module {
+class ShopModule extends Module {
   
   /**
    * registers dashup structs
@@ -16,9 +16,9 @@ class HostModule extends Module {
    */
   register(fn) {
     // register sms action
-    fn('page', HostPage);
+    fn('page', CheckoutPage);
   }
 }
 
 // create new
-module.exports = new HostModule();
+module.exports = new ShopModule();

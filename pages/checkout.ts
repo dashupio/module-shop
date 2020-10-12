@@ -5,19 +5,16 @@ import { Struct } from '@dashup/module';
 /**
  * build address helper
  */
-export default class ShopPage extends Struct {
+export default class CheckoutPage extends Struct {
   
   /**
-   * construct shop page
+   * construct checkout page
    *
    * @param args 
    */
   constructor(...args) {
     // super
     super(...args);
-
-    // shop action
-    this.shopAction = this.shopAction.bind(this);
   }
 
   /**
@@ -25,7 +22,7 @@ export default class ShopPage extends Struct {
    */
   get type() {
     // return page type label
-    return 'shop';
+    return 'checkout';
   }
 
   /**
@@ -41,7 +38,7 @@ export default class ShopPage extends Struct {
    */
   get title() {
     // return page type label
-    return 'Shop Page';
+    return 'Checkout Page';
   }
 
   /**
@@ -60,8 +57,8 @@ export default class ShopPage extends Struct {
   get views() {
     // return object of views
     return {
-      view   : 'page/shop/view',
-      config : 'page/shop/config',
+      view   : 'page/checkout/view',
+      config : 'page/checkout/config',
     };
   }
 
