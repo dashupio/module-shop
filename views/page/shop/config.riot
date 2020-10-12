@@ -1,0 +1,43 @@
+<page-shop-config>
+  <div>
+  
+  </div>
+
+  <script>
+    // export default
+    export default class PageShopConfig {
+
+      /**
+       * on mounted
+       */
+      onMounted(...args) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+        
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+  </script>
+</page-shop-config>
