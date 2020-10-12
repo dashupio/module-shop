@@ -1,11 +1,95 @@
 <page-checkout-config>
   <div>
-  
+    <div class="mb-3">
+      <label class="form-label">
+        Auth Module
+      </label>
+      <!-- TODO move to @dashup calls -->
+      <eden-select on-change={ (e, val) => onAuth(val) } ref={ ref('auth') } placeholder="Select Auth Module" data={ getAuth() } />
+    </div>
+
+    <hr />
+    
+    <div class="mb-3">
+      <label class="form-label">
+        Order Model
+      </label>
+      <eden-select on-change={ (e, val) => onOrder(val) } ref={ ref('order') } placeholder="Select Model" data={ getOrder() } />
+    </div>
+    
+    <div class="mb-3" if={ props.page.get('data.order.model') }>
+      <label class="form-label">
+        Order Form
+      </label>
+      <eden-select on-change={ (e, val) => onOrderForm(val) } ref={ ref('orderForm') } placeholder="Select Form" data={ getOrderForm() } />
+    </div>
+
+    <div class="mb-3" if={ props.page.get('data.order.form') } each={ (field, i) in orderFields }>
+      <label class="form-label">
+        Order { field.name }
+      </label>
+      <eden-select on-change={ (e, val) => onField('order', field.name.split(' ')[0].toLowerCase(), val) } ref={ ref(`order-${field.name.split(' ')[0].toLowerCase()}`) } placeholder="Select Field" data={ getField('order', field.name.split(' ')[0].toLowerCase()) } />
+    </div>
+
+    <hr />
+    
+    <div class="mb-3">
+      <label class="form-label">
+        Product Model
+      </label>
+      <eden-select on-change={ (e, val) => onProduct(val) } ref={ ref('product') } placeholder="Select Model" data={ getProduct() } />
+    </div>
+    
+    <div class="mb-3" if={ props.page.get('data.product.model') }>
+      <label class="form-label">
+        Product Form
+      </label>
+      <eden-select on-change={ (e, val) => onProductForm(val) } ref={ ref('productForm') } placeholder="Select Form" data={ getProductForm() } />
+    </div>
+    
+    <div class="card border bg-white" if={ props.page.get('data.product.form') }>
+      <div class="card-header">
+        Product Fields
+      </div>
+      <div class="card-body">
+        <div class="mb-3" each={ (field, i) in productFields }>
+          <label class="form-label">
+            Product { field.name }
+          </label>
+          <eden-select on-change={ (e, val) => onField('product', field.name.toLowerCase(), val) } ref={ ref(`product-${field.name.toLowerCase()}`) } placeholder="Select Field" data={ getField('product', field.name.toLowerCase()) } />
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     // export default
     export default class PageCheckoutConfig {
+      /**
+       * on before mount
+       */
+      onBeforeMount(...args) {
+        // product fields
+        this.productFields = [{
+          name : 'Field',
+          type : 'product',
+        }, {
+          name : 'Image',
+          type : 'image',
+        }, {
+          name : 'Title',
+          type : 'text',
+        }, {
+          name : 'Description',
+          type : 'textarea-wysiwyg',
+        }];
+
+        // order fields
+        this.orderFields = [{
+          name : 'Field',
+          type : 'order',
+        }];
+      }
 
       /**
        * on mounted
@@ -16,12 +100,265 @@
         
       }
 
+      // AUTH EVENTS
+
+      /**
+       * on model
+       */
+      onAuth(val) {
+        // get value
+        if (!val) val = this.refs.auth.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // set model
+        this.props.data('auth', val);
+      }
+
+      // ORDER EVENTS
+
+      /**
+       * on model
+       */
+      onOrder(val) {
+        // get value
+        if (!val) val = this.refs.order.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // set model
+        this.props.data('order', {
+          model : val,
+        });
+      }
+
+      /**
+       * on model
+       */
+      onOrderForm(val) {
+        // get value
+        if (!val) val = this.refs.orderForm.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // get order
+        const order = this.props.page.get('data.order') || {};
+        order.form = val;
+        
+        // set model
+        this.props.data('order', order);
+      }
+
+      // PRODUCT EVENTS
+
+      /**
+       * on model
+       */
+      onProduct(val) {
+        // get value
+        if (!val) val = this.refs.product.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // get order
+        const product = this.props.page.get('data.product') || {};
+        product.model = val;
+        
+        // set model
+        this.props.data('product', product);
+      }
+
+      /**
+       * on model
+       */
+      onProductForm(val) {
+        // get value
+        if (!val) val = this.refs.productForm.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // get order
+        const product = this.props.page.get('data.product') || {};
+        product.form = val;
+        
+        // set model
+        this.props.data('product', product);
+      }
+
+      /**
+       * on model
+       */
+      async onField(base, type, val) {
+        // get value
+        if (!val) val = this.refs[`${base}-${type}`].val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // get val
+        const baseVal = this.props.page.get(`data.${base}`) || {};
+        baseVal[type] = val;
+        
+        // set model
+        this.props.data(base, baseVal);
+      }
+
+      // AUTH VALUES
+
+      /**
+       * get value
+       */
+      getAuth() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'auth';
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.auth') === page.get('_id'),
+          };
+        });
+      }
+
+      /**
+       * gets all fields
+       */
+      getFields(form) {
+        // reduce
+        return [form].reduce((accum, id) => {
+          // get page
+          const page = this.props.dashup.page(id);
+
+          // check page
+          if (!page || !page.get('data.fields')) return accum;
+
+          // loop fields
+          accum.push(...page.get('data.fields'));
+
+          // return accum
+          return accum;
+        }, []);
+      }
+
+      // ORDER VALUES
+
+      /**
+       * get value
+       */
+      getOrder() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'model';
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.order.model') === page.get('_id'),
+          };
+        });
+      }
+
+      /**
+       * get value
+       */
+      getOrderForm() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'form' && page.get('data.model') === this.props.page.get('data.order.model');
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.order.form') === page.get('_id'),
+          };
+        });
+      }
+
+      /**
+       * get field
+       */
+      getField(base, type) {
+        // return value
+        return this.getFields(this.props.page.get(`data.${base}.form`)).map((field) => {
+          // return value
+          return {
+            name     : field.label,
+            value    : field.uuid,
+            selected : this.props.page.get(`data.${base}.${type}`) === field.uuid,
+          };
+        });
+      }
+
+      // PRODUCT VALUES
+
+      /**
+       * get value
+       */
+      getProduct() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'model';
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.product.model') === page.get('_id'),
+          };
+        });
+      }
+
+      /**
+       * get value
+       */
+      getProductForm() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'form' && page.get('data.model') === this.props.page.get('data.product.model');
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.product.form') === page.get('_id'),
+          };
+        });
+      }
+
 
       // ////////////////////////////////////////////////////////////////////////////
       //
       // MISC METHODS
       //
       // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
 
       /**
        * set loading
