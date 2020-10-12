@@ -1,0 +1,159 @@
+<cart>
+  <div class={ getClass('cart', 'dashup-cart') }>
+    <div each={ (product, i) in getProducts() } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
+      <div class={ getClass('cartItemImage', 'col-4') } if={ getImage(product) }>
+        <img src={ getImage(product) } class={ getClass('cartItemImageImg', 'img-fluid') } />
+      </div>
+      <div class={ getClass('cartItemInfo', 'col') }>
+        <h2 class={ getClass('cartItemTitle', 'dashup-item-title') }>
+          { getTitle(product) }
+        </h2>
+        <p class={ getClass('cartItemPrice', 'dashup-item-price') }>
+          ${ getPrice(product).toFixed(2) }
+        </p>
+
+        <div class={ getClass('cartItemCart', 'dashup-item-qty row') }>
+          <div class={ getClass('cartItemQty', 'col-7') }>
+            
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <button class="btn btn-outline-dark" type="button" onclick={ (e) => onAdd(e, product) }>
+                  +
+                </button>
+              </div>
+              <input type="number" class="form-control text-center" value={ product.count } onchange={ (e) => onCount(e, product) }>
+              <div class="input-group-append">
+                <button class="btn btn-outline-dark" type="button" onclick={ (e) => onSubtract(e, product) }>
+                  -
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div class={ getClass('cartItemRemove', 'col-5') }>
+            <button class={ getClass('cartItemRemoveBtn', 'btn btn-block btn-outline-dark') } type="button" onclick={ (e) => onRemove(e, product) }>
+              Remove
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // import
+    import dotProp from 'dot-prop';
+
+		// export default
+    export default {
+      components : {
+      },
+
+      onBeforeMount(props, state) {
+        // initial state
+        this.state = {
+					ready : true,
+        };
+
+        // set dashup
+        this.dashup = props.dashup;
+
+        // safe update
+        this.safeUpdate = () => {
+          this.update();
+        };
+      },
+
+      onMounted(props, state) {
+        // add listener
+        props.page.on('cart', this.safeUpdate);
+      },
+
+      onBeforeUnmount(props, state) {
+        // add listener
+        props.page.removeListener('cart', this.safeUpdate);
+      },
+
+      onAdd(e, product) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // do in cart
+        this.props.page.add(product.product, product.count + 1);
+      },
+
+      onRemove(e, product) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // do in cart
+        this.props.page.remove(product.product);
+      },
+
+      onCount(e, product) {
+        // do in cart
+        this.props.page.add(product.product, parseInt(e.target.value));
+      },
+
+      onSubtract(e, product) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // do in cart
+        this.props.page.add(product.product, product.count - 1);
+      },
+
+      getClass(name, def) {
+        // get classes
+        const classes = this.props.classes || {};
+
+        // check name
+        if (!classes[name]) return def;
+
+        // return props
+        return classes[name];
+      },
+
+      getProducts() {
+        // get products
+        const products = this.props.page && this.props.page.cart ? this.props.page.cart.get('products') : {};
+
+        // return products
+        return Object.values(products);
+      },
+
+      getTitle(product) {
+        // return title
+        return dotProp.get(product, `product.${this.props.page.get('data.product.title.name') || this.props.page.get('data.product.title.uuid') || 'title'}`);
+      },
+
+      getImage(product) {
+        // return title
+        let img = dotProp.get(product, `product.${this.props.page.get('data.product.image.name') || this.props.page.get('data.product.image.uuid') || 'image'}`);
+
+        // no image
+        if (!img) return;
+
+        // check image
+        if (!Array.isArray(img)) img = [img];
+        
+        // return url
+        return (((img[0] || {}).thumbs || {})['2x-sq'] || {}).url;
+      },
+
+      getPrice(product) {
+        // return title
+        const prod = dotProp.get(product, `product.${this.props.page.get('data.product.field.name') || this.props.page.get('data.product.field.uuid')}`);
+
+        // return price
+        return (prod || {}).price || 0;
+      }
+    }
+
+  </script>
+</cart>

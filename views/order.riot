@@ -1,0 +1,323 @@
+<order>
+  <div class={ getClass('order', 'dashup-order row') }>
+    
+    <div class={ getClass('orderMain', 'dashup-order-main col-7') }>
+
+      <div class={ getClass('orderLogo', 'dashup-order-logo text-center') } if={ props.logo }>
+        <img src={ props.logo } class={ getClass('orderLogoImg', 'w-25 margin-auto') } />
+      </div>
+    
+      <div class={ getClass('orderId', 'dashup-order-id text-center mt-3 mb-5') }>
+        <span class="text-bold">
+          Order #{ state.order ? state.order.get('_id') : 'Loading...' }
+        </span>
+      </div>
+
+      <div if={ state.items && state.items.length }>
+        <div class="card">
+          <div each={ (item, i) in state.items } class="card-header">
+            <div class="row">
+              <div class="col-3">
+                <b>
+                  <small>
+                    { item.key }
+                  </small>
+                </b>
+              </div>
+              <div class="col-9">
+                <small class="text-overflow">
+                  { item.value }
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+      </div>
+      
+      <div if={ getSource() }>
+        <div is={ `order-${getSource().type}` } payment={ getPayment() } source={ getSource() } { ...props } />
+
+        <hr />
+      </div>
+    </div>
+    
+    <div class={ getClass('orderSidebar', 'dashup-order-cart col-5') }>
+
+      <!-- CART -->
+      <div each={ (product, i) in getProducts() } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
+        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image') }>
+          <img src={ getProduct(product, 'image') } class={ getClass('cartItemImageImg', 'img-fluid') } />
+        </div>
+        <div class={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
+          <div class="w-100">
+            <p class={ getClass('cartItemTitle', 'dashup-item-title') }>
+              <small>
+                { product.count.toLocaleString() }
+                <i class={ getClass('cartItemPriceSep', 'fal fa-times mx-1') } />
+              </small>
+              <b>{ getProduct(product, 'title') }</b>
+            </p>
+            <p class={ getClass('cartItemPrice', 'dashup-item-price') }>
+              <b>
+                ${ (getProduct(product, 'price', 0) * product.count).toFixed(2) }
+              </b>
+              <small if={ getProduct(product, 'type') === 'subscription' } class={ getClass('cartItemPeriod', 'dashup-item-period ml-2') }>
+                { getProduct(product, 'period') }
+              </small>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- / CART -->
+
+      <hr />
+
+      <!-- SUB TOTAL -->
+      <div class={ getClass('orderSubtotal', 'dashup-subtotal') } if={ state.ready }>
+        <div each={ entry in Object.entries(getSubTotals()) } class={ getClass('orderSubtotalLine', 'row mb-2') }>
+          <div class={ getClass('orderSubtotalLabel', 'col-8') }>
+            { `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` }
+          </div>
+          <div class={ getClass('orderSubtotalAmount', 'col-4 text-right')}>
+            <b>${ entry[1].toFixed(2) }</b>
+          </div>
+        </div>
+        <div class={ getClass('orderSubtotalLine', 'row mb-2') } if={ getDiscount() }>
+          <div class={ getClass('orderSubtotalLabel', 'col-8') }>
+            Discount
+          </div>
+          <div class={ getClass('orderSubtotalAmount', 'col-4 text-right')}>
+            <b>${ getDiscount().toFixed(2) }</b>
+          </div>
+        </div>
+        <div class={ getClass('orderSubtotalLine', 'row mb-2') } if={ checkout.get('data.order.shipping.uuid') }>
+          <div class={ getClass('orderSubtotalLabel', 'col-8') }>
+            Shipping
+          </div>
+          <div class={ getClass('orderSubtotalAmount', 'col-4 text-right')}>
+            <b if={ checkout.shipping() }>${ checkout.shipping().toFixed(2) }</b>
+            <i if={ !checkout.shipping() }>N/A</i>
+          </div>
+        </div>
+      </div>
+      <!-- / SUB TOTAL -->
+
+      <hr />
+
+      <!-- TOTAL -->
+      <div class={ getClass('orderTotal', 'dashup-total') }>
+        <div class={ getClass('orderTotalLine', 'row mb-2') }>
+          <div class={ getClass('orderTotalLabel', 'col-8 d-flex align-items-center') }>
+            Total
+          </div>
+          <div class={ getClass('orderTotalAmount', 'col-4 text-right h4')}>
+            ${ getTotal().toFixed(2) }
+          </div>
+        </div>
+      </div>
+      <!-- / TOTAL -->
+
+    </div>
+  </div>
+
+  <script>
+    // import
+    import dotProp from 'dot-prop';
+    import orderStripe from './order/stripe.riot.ts';
+
+		// export default
+    export default {
+      components : {
+        orderStripe,
+      },
+
+      onBeforeMount(props, state) {
+        // initial state
+        this.state = {
+          items : [],
+          order : null,
+					ready : false,
+        };
+
+        // set dashup
+        this.auth = props.dashup.page(props.page.get('data.auth.id'));
+        this.dashup = props.dashup;
+        this.orders = props.dashup.page(props.page.get('data.order.form.id'));
+        this.checkout = props.page;
+
+        // safe update
+        this.safeUpdate = () => {
+          this.update();
+        };
+      },
+
+      async onMounted(props, state) {
+        // add listener
+        if (props.order) {
+          // check order
+          const order = await this.orders.listenById(props.order);
+
+          // safe update
+          order.on('update', this.safeUpdate);
+
+          // items
+          const items = [{
+            key   : 'Contact',
+            value : order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.information.email`),
+          }];
+
+          // shipping
+          const billing = order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.information.address`);
+
+          // shipping
+          if (billing && billing.first) {
+            items.push({
+              key   : 'Bill to',
+              value : `${billing.first || ''} ${billing.last || ''}`,
+            }, {
+              key   : '',
+              value : `
+                ${billing.street ? `${billing.street},` : ''}
+                ${billing.city ? `${billing.city}` : ''}
+                ${billing.postcode ? `${billing.postcode},` : ''}
+                ${billing.country ? `${billing.country}` : ''}`,
+            });
+          }
+
+          // shipping
+          const shipping = order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.shipping.address`);
+
+          // shipping
+          if (shipping && Object.keys(shipping).length) {
+            items.push({
+              key   : 'Ship to',
+              value : `${shipping.first || ''} ${shipping.last || ''}`,
+            }, {
+              key   : '',
+              value : `
+                ${shipping.street ? `${shipping.street},` : ''}
+                ${shipping.city ? `${shipping.city}` : ''}
+                ${shipping.postcode ? `${shipping.postcode},` : ''}
+                ${shipping.country ? `${shipping.country}` : ''}`,
+            });
+          }
+
+          // update
+          this.update({
+            order,
+            items,
+            ready : true,
+          });
+        }
+      },
+
+      onBeforeUnmount(props, state) {
+        // safe update
+        if (this.state.order) this.state.order.removeListener('update', this.safeUpdate);
+      },
+
+      getClass(name, def) {
+        // get classes
+        const classes = this.props.classes || {};
+
+        // check name
+        if (!classes[name]) return def;
+
+        // return props
+        return classes[name];
+      },
+
+      getProducts() {
+        // get products
+        const products = this.state.order ? this.state.order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.products`) || [] : [];
+
+        // return products
+        return products;
+      },
+
+      getTotal() {
+        // return total
+        return this.getPayment() ? this.getPayment().total || 0 : 0;
+      },
+
+      getSubTotals() {
+        // get total
+        const types = this.getProducts().reduce((accum, product) => {
+          // get type
+          const type = product.type;
+          const period = product.period;
+
+          // check type
+          const actualType = type === 'subscription' ? period : 'subtotal';
+
+          // check type
+          if (!accum.includes(actualType)) accum.push(actualType);
+
+          // return accum
+          return accum;
+        }, []);
+
+        // totals
+        let totals = types.reduce((accum, t) => {
+          // return total
+          accum[t] = this.getProducts().filter((product) => {
+            // get type
+            const type = product.type;
+            const period = product.period;
+
+            // check type
+            const actualType = type === 'subscription' ? period : 'subtotal';
+
+            // type
+            return actualType === t;
+          }).reduce((accum, product) => {
+            console.log(accum, product);
+            // return value
+            return accum + (product.price * product.count);
+          }, 0);
+
+          // return accum
+          return accum;
+        }, {});
+
+        // totals
+        if (!Object.keys(totals).length) {
+          totals = { 'subtotal' : 0 };
+        }
+
+        // return total
+        return totals;
+      },
+
+      getDiscount() {
+        // return total
+        return this.getPayment() ? this.getPayment().discount || 0 : 0;
+      },
+
+      getProduct(product, key, d, extra) {
+        // return
+        return dotProp.get(product, `${key}${extra ? `.${extra}` : ''}`) || d;
+      },
+
+      getPayment() {
+        // return source
+        return this.state.order ? this.state.order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.payment`) : null;
+      },
+
+      getSource() {
+        // get payment
+        const type = this.getPayment() ? this.getPayment().type : null;
+
+        // check type
+        if (!type) return;
+
+        // return payment type
+        return this.checkout.get('connectors').find(s => s.uuid === type);
+      }
+    }
+
+  </script>
+</order>

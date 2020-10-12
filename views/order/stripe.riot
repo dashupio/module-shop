@@ -1,0 +1,26 @@
+<order-stripe>
+  <div class="order-stripe">
+    <div each={ (charge, i) in props.payment.charges } class={ `alert alert-${charge.status === 'succeeded' ? 'success' : charge === 'pending' ? 'info' : 'danger'} mt-3` }>
+      <i class={ `fab fa-${props.source.type} mr-2` } />
+      Payment { charge.status === 'succeeded' ? 'Complete' : 'Pending' }
+      #{ charge.stripe.charge }
+    </div>
+  </div>
+
+  <script>
+
+		// export default
+    export default {
+      components : {
+      },
+
+      onBeforeMount(props, state) {
+
+      },
+
+      onMounted() {
+
+      },
+    }
+  </script>
+</order-stripe>

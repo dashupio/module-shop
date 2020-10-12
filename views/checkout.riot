@@ -1,0 +1,539 @@
+<checkout>
+  <div class={ getClass('checkout', 'dashup-checkout row') }>
+    
+    <div class={ getClass('checkoutMain', 'dashup-checkout-main col-7') }>
+
+      <div class={ getClass('checkoutLogo', 'dashup-checkout-logo text-center') } if={ props.logo }>
+        <img src={ props.logo } class={ getClass('checkoutLogoImg', 'w-25 margin-auto') } />
+      </div>
+    
+      <div class={ getClass('checkoutSteps', 'dashup-checkout-logo text-center mt-3 mb-5') }>
+        <span each={ (step, i) in steps } class={ state.step === step.toLowerCase() ? 'text-bold' : '' }>
+          { step }
+          { i < steps.length - 1 ? ' > ' : '' }
+        </span>
+      </div>
+
+      <div if={ state.items && state.items.length }>
+        <div class="card">
+          <div each={ (item, i) in state.items } class="card-header">
+            <div class="row">
+              <div class="col-3">
+                <b>
+                  <small>
+                    { item.key }
+                  </small>
+                </b>
+              </div>
+              <div class="col-6">
+                <small class="text-overflow">
+                  { JSON.stringify(item.value) }
+                </small>
+              </div>
+              <div class="col-3 text-right">
+                <button class="btn btn-sm btn-link" onclick={ (e) => onStep(e, item.step) }>
+                  Change
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+      </div>
+
+      <!-- INFORMATION -->
+      <div if={ state.step === 'information' }>
+
+        <!-- ACCOUNT -->
+        <div class={ getClass('checkoutContact', 'dashup-contact') }>
+          <div class={ getClass('checkoutContactHeader', 'row') }>
+
+            <div class={ getClass('checkoutContactLabel', 'col-6') }>
+              <label class={ getClass('checkoutContactTitle', 'text-large') }>
+                Contact
+              </label>
+            </div>
+            <div class={ getClass('checkoutContactExtra', 'col-6 text-right') }>
+
+              <a href="#!" if={ !auth.exists() } onclick={ (e) => toggleLogin() }>
+                Login or Register
+              </a>
+
+            </div>
+          </div>
+
+          <input class={ getClass('checkoutInput', 'form-control') } placeholder="Email" value={ auth.exists() ? auth.user.get(auth.get('data.field.email.name') || auth.get('data.field.email.uuid')) : '' } readonly={ auth.exists() } type="email" onchange={ (e) => onEmail(e) } />
+
+        </div>
+        <!-- / ACCOUNT -->
+
+        <hr />
+
+        <!-- BILLING -->
+        <field-address if={ checkout.get('data.order.billing.uuid') } label="Billing Address" on-change={ (address) => onBillingAddress(address) } { ...props } />
+        <!-- / BILLING -->
+
+        <hr if={ checkout.get('data.order.billing.uuid') } />
+      </div>
+      <!-- / INFORMATION -->
+
+      <!-- SHIPPING -->
+      <div if={ state.step === 'shipping' && checkout.get('data.order.shipping.uuid') }>
+        <div class="form-check mr-sm-2">
+          <input type="checkbox" class="form-check" id="shipping-is-billing" onchange={ (e) => onShippingCheck(e) } { ...getIsBilling() }>
+          <label class="form-check-label" for="shipping-is-billing">
+            Shipping Address same as Billing
+          </label>
+        </div>
+        
+        <hr if={ !getIsBilling().checked } />
+
+        <field-address label="Shipping Address" if={ !getIsBilling().checked } on-change={ (address) => onShippingAddress(address) } { ...props } />
+        
+        <hr if={ !getIsBilling().checked && Object.keys(state.shipping).length } />
+
+        <div class="card my-4" if={ getIsBilling().checked || Object.keys(state.shipping).length }>
+          <div class="card-header">
+            Shipping to
+          </div>
+          <div class="card-body">
+            { getShipping().street ? `${getShipping().street},` : '' }
+            { getShipping().city ? `${getShipping().city}` : '' }
+            { getShipping().postcode ? `${getShipping().postcode},` : '' }
+            { getShipping().country ? `${getShipping().country}` : '' }
+          </div>
+        </div>
+      </div>
+      <!-- / SHIPPING -->
+
+      <!-- PAYMENT -->
+      <div if={ state.step === 'payment' }>
+        <div class="card mb-3">
+          <div each={ (source, i) in props.page.get('connectors') }>
+            <div class="card-header">
+              <div class="form-check">
+                <input type="radio" id={ source.uuid } name="payment-type" class="form-check-input" checked />
+                <label class="form-check-label" for={ source.uuid }>
+                  { source.type }
+                </label>
+              </div>
+            </div>
+            <div if={ state.source === source.type } is={ `checkout-${source.type}` } class="card-body" source={ source } billing={ state.billing } enable={ (a, b) => onEnablePayment(a, b) } disable={ () => onDisablePayment() } { ...props } />
+          </div>
+        </div>
+      </div>
+      <!-- / PAYMENT -->
+
+      <!-- COMPLETE -->
+      <div class={ getClass('checkoutComplete', 'dashup-checkout-complete row') }>
+        <div class={ getClass('checkoutCompleteBack', 'col-6') }>
+          <button class={ getClass('checkoutCompleteBtn', 'btn btn-link pl-0 btn-lg') } onclick={ (e) => onBack(e) } if={ steps.map(s => s.toLowerCase()).indexOf(state.step) > 1 }>
+            Back
+          </button>
+          <a href={ props.back } if={ props.back && steps.map(s => s.toLowerCase()).indexOf(state.step) === 1 } class={ getClass('checkoutCompleteBtn', 'btn btn-link pl-0 btn-lg') }>
+            Back
+          </a>
+        </div>
+        <div class={ getClass('checkoutCompleteBtnWrap', 'col-6 text-right') }>
+          <button if={ state.step !== 'payment' } class={ getClass('checkoutCompleteBtn', 'btn btn-dark btn-lg') } onclick={ (e) => onContinue(e) }>
+            Continue
+          </button>
+
+          <button if={ state.step === 'payment' } class={ `${getClass('checkoutCompleteBtn', 'btn btn-success btn-lg')} ${enabled.payment && !state.checkout ? '' : 'disabled'}` } onclick={ (e) => onComplete(e) }>
+            { state.checkout ? 'Completing...' : 'Complete Order' }
+          </button>
+        </div>
+      </div>
+      <!-- / COMPLETE -->
+    </div>
+    
+    <div class={ getClass('checkoutSidebar', 'dashup-checkout-cart col-5') }>
+
+      <!-- CART -->
+      <div each={ (product, i) in getProducts() } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
+        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image', null, 'thumbs.0.2x-sq.url') }>
+          <img src={ getProduct(product, 'image', null, 'thumbs.0.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
+        </div>
+        <div class={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
+          <div class="w-100">
+            <p class={ getClass('cartItemTitle', 'dashup-item-title') }>
+              <small>
+                { product.count.toLocaleString() }
+                <i class={ getClass('cartItemPriceSep', 'fal fa-times mx-1') } />
+              </small>
+              <b>{ getProduct(product, 'title') }</b>
+            </p>
+            <p class={ getClass('cartItemPrice', 'dashup-item-price') }>
+              <b>
+                ${ (getProduct(product, 'field', 0, 'price') * product.count).toFixed(2) }
+              </b>
+              <small if={ getProduct(product, 'field', 0, 'type') === 'subscription' } class={ getClass('cartItemPeriod', 'dashup-item-period ml-2') }>
+                { getProduct(product, 'field', 0, 'period') }
+              </small>
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- / CART -->
+
+      <hr />
+
+      <!-- DISCOUNT -->
+      <div class={ getClass('checkoutDiscount', 'dashup-discount row') }>
+        <div class={ getClass('checkoutDiscountInputWrap', 'col-8') }>
+          <input class={ getClass('checkoutDiscountInput', 'form-control') } placeholder="Discount code" />
+        </div>
+        <div class={ getClass('checkoutDiscountBtnWrap', 'col-4') }>
+          <button class={ getClass('checkoutButton', 'btn btn-block btn-dark') }>
+            Apply
+          </button>
+        </div>
+      </div>
+      <!-- / DISCOUNT -->
+
+      <hr />
+
+      <!-- SUB TOTAL -->
+      <div class={ getClass('checkoutSubtotal', 'dashup-subtotal') }>
+        <div each={ entry in Object.entries(checkout.totals()) } class={ getClass('checkoutSubtotalLine', 'row mb-2') }>
+          <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
+            { `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` }
+          </div>
+          <div class={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
+            <b>${ entry[1].toFixed(2) }</b>
+          </div>
+        </div>
+        <div class={ getClass('checkoutSubtotalLine', 'row mb-2') } if={ checkout.discount() }>
+          <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
+            Discount
+          </div>
+          <div class={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
+            <b>${ checkout.discount().toFixed(2) }</b>
+          </div>
+        </div>
+        <div class={ getClass('checkoutSubtotalLine', 'row mb-2') } if={ checkout.get('data.order.shipping.uuid') }>
+          <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
+            Shipping
+          </div>
+          <div class={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
+            <b if={ checkout.shipping() }>${ checkout.shipping().toFixed(2) }</b>
+            <i if={ !checkout.shipping() }>N/A</i>
+          </div>
+        </div>
+      </div>
+      <!-- / SUB TOTAL -->
+
+      <hr />
+
+      <!-- TOTAL -->
+      <div class={ getClass('checkoutTotal', 'dashup-total') }>
+        <div class={ getClass('checkoutTotalLine', 'row mb-2') }>
+          <div class={ getClass('checkoutTotalLabel', 'col-8 d-flex align-items-center') }>
+            Total
+          </div>
+          <div class={ getClass('checkoutTotalAmount', 'col-4 text-right h4')}>
+            ${ checkout.total(true).toFixed(2) }
+          </div>
+        </div>
+      </div>
+      <!-- / TOTAL -->
+
+    </div>
+  </div>
+
+  <script>
+    // import
+    import dotProp from 'dot-prop';
+    import fieldAddress from './field/address.riot.ts';
+    import checkoutStripe from './checkout/stripe.riot.ts';
+
+		// export default
+    export default {
+      components : {
+        fieldAddress,
+        checkoutStripe,
+      },
+
+      onBeforeMount(props, state) {
+        // initial state
+        this.state = {
+          step     : 'information',
+					ready    : true,
+          email    : '',
+          source   : ((props.page.get('connectors') || [])[0] || {}).type,
+          billing  : {},
+          payment  : {},
+          shipping : 'billing',
+          checkout : false,
+        };
+        this.enabled = {
+          payment : false,
+        };
+
+        // bind methods
+        this.onComplete = this.onComplete.bind(this);
+        this.onContinue = this.onContinue.bind(this);
+
+        // set dashup
+        this.auth = props.dashup.page(props.page.get('data.auth.id'));
+        this.dashup = props.dashup;
+        this.checkout = props.page;
+
+        // set steps
+        this.steps = this.checkout.get('data.order.shipping.uuid') ? ['Cart', 'Information', 'Shipping', 'Payment'] : ['Cart', 'Information', 'Payment'];
+
+        // safe update
+        this.safeUpdate = () => {
+          this.update();
+        };
+      },
+
+      onMounted(props, state) {
+        // add listener
+        props.page.on('cart', this.safeUpdate);
+      },
+
+      onBeforeUnmount(props, state) {
+        // add listener
+        props.page.removeListener('cart', this.safeUpdate);
+      },
+
+      onContinue(e) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // get current
+        const current = this.steps[this.steps.map(s => s.toLowerCase()).indexOf(this.state.step)];
+
+        // do step check
+        if (this[`on${current}`] && !this[`on${current}`]()) return;
+
+        // set state
+        this.update({
+          step : this.steps[this.steps.map(s => s.toLowerCase()).indexOf(this.state.step) + 1].toLowerCase(),
+        });
+      },
+
+      async onComplete(e) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // check checkout
+        if (this.state.checkout) return;
+
+        // create checkout
+        this.update({
+          checkout : true,
+        });
+        
+        // create object
+        const products = Object.keys(this.checkout.cart.get('products')).map((id) => {
+          // return products
+          return {
+            _id   : id,
+            opts  : this.checkout.cart.get(`products.${id}.opts`),
+            count : this.checkout.cart.get(`products.${id}.count`),
+          };
+        });
+
+        // billing/shipping
+        const information = {
+          email   : this.state.email || (this.auth.exists() ? this.auth.user.get(this.auth.get('data.field.email.name') || this.auth.get('data.field.email.uuid')) : ''),
+          address : this.state.billing,
+        };
+        const shipping = {
+          address : this.getShipping(),
+        };
+        const payment = this.state.payment;
+
+        // await call
+        const done = await this.dashup.call('checkout.complete', { id : this.checkout.get('_id'), products, information, shipping, payment }, {
+          id : this.checkout.get('_id'),
+        });
+
+        // create checkout
+        this.update({
+          checkout : false,
+        });
+
+        // check done
+        if (done._id) {
+          // done
+          if (this.props.onSuccess) this.props.onSuccess(done);
+
+          // clear cart
+          this.checkout.cart.set(`products`, {});
+          this.checkout.emit('cart', this.checkout.cart);
+        } else {
+          // on error
+          if (this.props.onError) this.props.onerror(done);
+        }
+      },
+
+      onShippingCheck(e) {
+        // check
+        if (e.target.checked) {
+          // update billing
+          this.update({
+            shipping : 'billing',
+          });
+        } else {
+          // update billing
+          this.update({
+            shipping : {},
+          });
+        }
+      },
+
+      onBillingAddress(billing) {
+        // update billing
+        this.update({
+          billing,
+        });
+      },
+
+      onShippingAddress(shipping) {
+        // update billing
+        this.update({
+          shipping,
+        });
+      },
+
+      onEmail(e) {
+        // update
+        this.update({
+          email : e.target.value,
+        });
+      },
+
+      onEnablePayment(type, value) {
+        // enable payment
+        this.enabled.payment = true;
+
+        // add to state
+        this.update({
+          payment : { type, value },
+        });
+      },
+
+      onDisablePayment() {
+        // enable payment
+        this.enabled.payment = false;
+
+        // add to state
+        this.update({
+          payment : null,
+        });
+      },
+
+      onInformation() {
+        // check information
+        const can = (this.checkout.get('data.order.billing.uuid') ? Object.keys(this.state.billing).length : true) && this.auth.exists() || this.state.email.length;
+        
+        // check can
+        if (can) {
+          // add to items
+          const items = (this.state.items || []).filter(i => i.step !== 'information');
+
+          // push to items
+          items.push({
+            key   : 'Contact',
+            step  : 'information',
+            value : this.state.email || (this.auth.exists() ? this.auth.user.get(this.auth.get('data.field.email.name') || this.auth.get('data.field.email.uuid')) : ''),
+          });
+
+          // update items
+          this.update({
+            items,
+          });
+        }
+
+        // return can
+        return can;
+      },
+
+      onShipping() {
+        // return shipping
+        const can = (this.checkout.get('data.order.shipping.uuid') ? (this.state.shipping === 'billing' || Object.keys(this.state.shipping).length) : true);
+
+        // check can
+        if (can) {
+          // add to items
+          const items    = (this.state.items || []).filter(i => i.step !== 'shipping');
+          const shipping = this.getShipping();
+
+          // push to items
+          items.push({
+            key : 'Ship to',
+            step : 'shipping',
+            value : `
+              ${shipping.street ? `${shipping.street},` : ''}
+              ${shipping.city ? `${shipping.city}` : ''}
+              ${shipping.postcode ? `${shipping.postcode},` : ''}
+              ${shipping.country ? `${shipping.country}` : ''}`,
+          });
+
+          // update items
+          this.update({
+            items,
+          });
+        }
+
+        // return can
+        return can;
+      },
+
+      onBack(e) {
+        // prevent
+        e.preventDefault();
+        e.stopPropagation();
+
+        // get index
+        const index = this.steps.map((s) => s.toLowerCase()).indexOf(this.state.step);
+        
+        // update step
+        this.update({
+          step : this.steps[index - 1].toLowerCase(),
+        });
+      },
+
+      getClass(name, def) {
+        // get classes
+        const classes = this.props.classes || {};
+
+        // check name
+        if (!classes[name]) return def;
+
+        // return props
+        return classes[name];
+      },
+
+      getProducts() {
+        // get products
+        const products = this.checkout && this.checkout.cart ? this.checkout.cart.get('products') : {};
+
+        // return products
+        return Object.values(products);
+      },
+
+      getProduct(product, key, d, extra) {
+        // return
+        return dotProp.get(product, `product.${this.checkout.get(`data.product.${key}.name`) || this.checkout.get(`data.product.${key}.uuid`)}${extra ? `.${extra}` : ''}`) || d;
+      },
+
+      getIsBilling() {
+        // check billing
+        return this.state.shipping === 'billing' ? { checked : true } : {};
+      },
+
+      getShipping() {
+        // return shipping
+        return this.state.shipping === 'billing' ? this.state.billing : this.state.shipping;
+      }
+    }
+
+  </script>
+</checkout>
