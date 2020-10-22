@@ -1,0 +1,289 @@
+<field-product-input>
+  <div>
+    <div class="card mb-3 border bg-transparent">
+      <div class="card-header border-bottom">
+        { props.field.label || 'Set Label' }
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">
+            { props.field.label || 'Product' } Type
+          </label>
+          <eden-select ref={ ref('type') } placeholder={ `${ props.field.label || 'Product' } Type` } data={ getType() } on-change={ (e, val) => onType(val) } name={ props.getName(`${props.field.uuid}[type]`) } />
+        </div>
+
+        <div if={ value.type }>
+          <div class="mb-3">
+            <validate type="number" data-value={ value.price || '0' } name={ props.getName(`${props.field.uuid}[price]`) } label={ `${ props.field.label || 'Subscription' } ${ value.type === 'variable' ? 'Base ' : '' }Price` }>
+              <span slot="prepend" class="input-group-text">
+                $
+              </span>
+            </validate>
+          </div>
+        </div>
+        <div if={ value.type === 'subscription' }>
+          <div class="mb-3">
+            <label class="form-label">
+              { props.field.label || 'Subscription' } Period
+            </label>
+            <eden-select ref={ ref('period') } placeholder={ `${ props.field.label || 'Subscription' } Period` } data={ getPeriods() } on-change={ (e, val) => onPeriod(val) } name={ props.getName(`${props.field.uuid}[period]`) } />
+          </div>
+        </div>
+
+        <div class="card border bg-transparent" if={ value.type === 'variable' }>
+          <div class="card-header border-bottom">
+            <label class="m-0">
+              { props.field.label } Variations
+            </label>
+          </div>
+          <div each={ (variation, i) in value.variations } class="card-body border-bottom">
+            <div class="mb-3">
+              <validate type="number" data-value={ variation.price || '0' } label={ `Variation Price` } name={ getName('price', i) }>
+                <span slot="prepend" class="input-group-text">
+                  $
+                </span>
+              </validate>
+            </div>
+      
+            <!-- VARIATION -->
+            <div class={ `${ classes({ 'empty' : !props.getFields(`${props.field.uuid}.variation`).length, 'eden-dropzone' : !props.preview }) }` } data-form={ props.placement } data-parent={ `${props.field.uuid}.variation` }>
+              <span class="eden-dropzone-label" if={ !props.preview }>
+                { props.field.label }
+              </span>
+
+              <eden-add type="top" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+              <div class="row form-fields">
+                <template each={ (field, i) in props.getFields(`${props.field.uuid}.variation`) }>
+                  <eden-field-input { ...getProps(field) } />
+                  <div if={ field.break } class="w-100" />
+                </template>
+              </div>
+
+              <eden-add type="bottom" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+            </div>
+            <!-- / VARIATION -->
+
+            <button type="button" class="btn btn-danger" onclick={ (e) => onRemoveVariation(e, i) }>
+              Remove Variation
+            </button>
+          </div>
+          
+          <div class="card-footer">
+            <button type="button" class="btn btn-success" onclick={ (e) => onVariation(e) }>
+              Add Variation
+            </button>
+          </div>
+
+        </div>
+        
+      </div>
+    </div>
+  </div>
+  
+  <script>
+  
+    // export default
+    export default class FieldProductInput {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * on before mount
+       */
+      onBeforeMount() {
+        // set initial value
+        this.value = this.props.value || {};
+
+        // bind
+        this.getName = this.getName.bind(this);
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on type
+       */
+      onType(val) {
+        // set value
+        this.value.type = val;
+
+        // update
+        this.update();
+      }
+
+      /**
+       * on type
+       */
+      onPeriod(val) {
+        // set value
+        this.value.period = val;
+
+        // update
+        this.update();
+      }
+
+      /**
+       * on variation
+       *
+       * @param  {Event} e
+       */
+      onVariation (e) {
+        // variations
+        if (!this.value.variations) this.value.variations = [];
+
+        // add variation
+        this.value.variations.push({
+          price : '0',
+        });
+
+        // update view
+        this.update();
+      }
+
+      /**
+       * on variation
+       *
+       * @param  {Event} e
+       */
+      onRemoveVariation (e, i) {
+        // add variation
+        this.value.variations.splice(i, 1);
+
+        // update view
+        this.update();
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * get props
+       */
+      getProps(field, i) {
+        // get parent
+        const actual = this.props.getProps(field);
+
+        // get name
+        actual.getName = (name) => this.getName(name, i);
+
+        // return actual
+        return actual;
+      }
+
+      /**
+       * get name
+       */
+      getName(name, i) {
+        // check split
+        const split = name.split('[');
+
+        // return name
+        if (split.length > 1) {
+          // 
+          return `${this.props.field.uuid}[variations][${i || '0'}][${split.shift()}][${split.join('[')}`;
+        }
+
+        // return name
+        return `${this.props.field.uuid}[variations][${i || '0'}][${name}]`;
+      }
+
+      /**
+       * get value
+       */
+      getType() {
+        // return value
+        const types = [['simple', 'Simple'], ['variable', 'Variable'], ['subscription', 'Subscription']];
+
+        // return mapped types
+        return types.map((item) => {
+          // return value
+          return {
+            name     : item[1],
+            value    : item[0],
+            selected : this.value.type === item[0],
+          };
+        });
+      }
+
+      /**
+       * get value
+       */
+      getPeriods() {
+        // return value
+        const types = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['semiannually', 'Semiannually'], ['annually', 'Annually']];
+
+        // return mapped types
+        return types.map((item) => {
+          // return value
+          return {
+            name     : item[1],
+            value    : item[0],
+            selected : this.value.period === item[0],
+          };
+        });
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+      
+      /**
+       * set classes
+       */
+      classes(obj = {}) {
+        // return classes
+        return Object.keys(obj).filter((key) => !!obj[key]).join(' ');
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+    
+  </script>
+</field-product-input>

@@ -1,0 +1,20 @@
+<checkout-payment>
+  <div id="checkout-payment" />
+
+  <script>
+
+    export default class CheckoutPayment {
+
+      /**
+       * on mounted
+       */
+      onMounted(props, state) {
+        // check frontend
+        if (typeof window === 'undefined') return;
+
+        // mount
+        this.props.page.view('#checkout-payment', 'pay', props, 'connect', props.connect.type);
+      }
+    }
+  </script>
+</checkout-payment>

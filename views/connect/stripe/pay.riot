@@ -1,5 +1,5 @@
-<checkout-stripe>
-  <div class="checkout-stripe">
+<connect-stripe-pay>
+  <div class="connect-stripe-pay">
     <div id="stripe-element" />
     <div class="alert alert-danger mt-3" if={ state.error }>
       { state.error }
@@ -48,7 +48,7 @@
           });
 
           // return public key
-          resolve(Stripe(props.source.clientID));
+          resolve(Stripe(props.connect.client));
         });
       },
 
@@ -71,7 +71,7 @@
               // create method
               stripe.createToken(card).then((result) => {
                 // payment method
-                this.props.enable(this.props.source.uuid, {
+                this.props.enable(this.props.connect, {
                   token : result.token.id
                 });
               });
@@ -85,4 +85,4 @@
       },
     }
   </script>
-</checkout-stripe>
+</connect-stripe-pay>

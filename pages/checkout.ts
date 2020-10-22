@@ -57,8 +57,12 @@ export default class CheckoutPage extends Struct {
   get views() {
     // return object of views
     return {
-      view   : 'page/checkout/view',
-      config : 'page/checkout/config',
+      order    : 'order',
+      checkout : 'checkout',
+
+      view     : 'page/checkout/view',
+      config   : 'page/checkout/config',
+      connects : 'page/checkout/connects',
     };
   }
 

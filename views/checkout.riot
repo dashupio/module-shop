@@ -18,22 +18,17 @@
         <div class="card">
           <div each={ (item, i) in state.items } class="card-header">
             <div class="row">
-              <div class="col-3">
+              <div class="col-5">
                 <b>
                   <small>
                     { item.key }
                   </small>
                 </b>
               </div>
-              <div class="col-6">
+              <div class="col-7">
                 <small class="text-overflow">
                   { JSON.stringify(item.value) }
                 </small>
-              </div>
-              <div class="col-3 text-right">
-                <button class="btn btn-sm btn-link" onclick={ (e) => onStep(e, item.step) }>
-                  Change
-                </button>
               </div>
             </div>
           </div>
@@ -41,29 +36,22 @@
 
         <hr />
       </div>
+    
+      <!-- STEPS -->
 
       <!-- INFORMATION -->
       <div if={ state.step === 'information' }>
 
         <!-- ACCOUNT -->
         <div class={ getClass('checkoutContact', 'dashup-contact') }>
-          <div class={ getClass('checkoutContactHeader', 'row') }>
+          <label class={ getClass('checkoutContactTitle', 'text-large form-label') }>
+            Contact
+            <a href="#!" class={ getClass('checkoutContactExtra', 'ml-auto') } if={ !(props.email || (auth && auth.exists())) } onclick={ (e) => toggleLogin() }>
+              Login or Register
+            </a>
+          </label>
 
-            <div class={ getClass('checkoutContactLabel', 'col-6') }>
-              <label class={ getClass('checkoutContactTitle', 'text-large') }>
-                Contact
-              </label>
-            </div>
-            <div class={ getClass('checkoutContactExtra', 'col-6 text-right') }>
-
-              <a href="#!" if={ !auth.exists() } onclick={ (e) => toggleLogin() }>
-                Login or Register
-              </a>
-
-            </div>
-          </div>
-
-          <input class={ getClass('checkoutInput', 'form-control') } placeholder="Email" value={ auth.exists() ? auth.user.get(auth.get('data.field.email.name') || auth.get('data.field.email.uuid')) : '' } readonly={ auth.exists() } type="email" onchange={ (e) => onEmail(e) } />
+          <input class={ getClass('checkoutInput', 'form-control') } placeholder="Email" value={ state.email || props.email || (auth && auth.exists() ? auth.user.get(checkout.field('auth', 'email').name || checkout.field('auth', 'email').uuid) : '') } readonly={ (auth && auth.exists()) || props.email } type="email" onchange={ (e) => onEmail(e) } />
 
         </div>
         <!-- / ACCOUNT -->
@@ -71,15 +59,15 @@
         <hr />
 
         <!-- BILLING -->
-        <field-address if={ checkout.get('data.order.billing.uuid') } label="Billing Address" on-change={ (address) => onBillingAddress(address) } { ...props } />
+        <field-address if={ checkout.get('data.order.billing') } label="Billing Address" on-change={ (address) => onBillingAddress(address) } { ...props } />
         <!-- / BILLING -->
 
-        <hr if={ checkout.get('data.order.billing.uuid') } />
+        <hr if={ checkout.get('data.order.billing') } />
       </div>
       <!-- / INFORMATION -->
 
       <!-- SHIPPING -->
-      <div if={ state.step === 'shipping' && checkout.get('data.order.shipping.uuid') }>
+      <div if={ state.step === 'shipping' && checkout.get('data.order.shipping') }>
         <div class="form-check mr-sm-2">
           <input type="checkbox" class="form-check" id="shipping-is-billing" onchange={ (e) => onShippingCheck(e) } { ...getIsBilling() }>
           <label class="form-check-label" for="shipping-is-billing">
@@ -110,7 +98,7 @@
       <!-- PAYMENT -->
       <div if={ state.step === 'payment' }>
         <div class="card mb-3">
-          <div each={ (source, i) in props.page.get('connectors') }>
+          <div each={ (source, i) in props.page.get('connects') }>
             <div class="card-header">
               <div class="form-check">
                 <input type="radio" id={ source.uuid } name="payment-type" class="form-check-input" checked />
@@ -119,7 +107,7 @@
                 </label>
               </div>
             </div>
-            <div if={ state.source === source.type } is={ `checkout-${source.type}` } class="card-body" source={ source } billing={ state.billing } enable={ (a, b) => onEnablePayment(a, b) } disable={ () => onDisablePayment() } { ...props } />
+            <checkout-payment if={ state.source === source.uuid } class="d-block card-body" connect={ source } billing={ state.billing } enable={ (a, b) => onEnablePayment(a, b) } disable={ () => onDisablePayment() } { ...props } />
           </div>
         </div>
       </div>
@@ -136,24 +124,26 @@
           </a>
         </div>
         <div class={ getClass('checkoutCompleteBtnWrap', 'col-6 text-right') }>
-          <button if={ state.step !== 'payment' } class={ getClass('checkoutCompleteBtn', 'btn btn-dark btn-lg') } onclick={ (e) => onContinue(e) }>
+          <button if={ state.step !== 'payment' } class={ getClass('checkoutCompleteBtn', 'btn btn-dark btn-lg') } onclick={ (e) => continueAction(e) }>
             Continue
           </button>
 
-          <button if={ state.step === 'payment' } class={ `${getClass('checkoutCompleteBtn', 'btn btn-success btn-lg')} ${enabled.payment && !state.checkout ? '' : 'disabled'}` } onclick={ (e) => onComplete(e) }>
+          <button if={ state.step === 'payment' } class={ `${getClass('checkoutCompleteBtn', 'btn btn-success btn-lg')} ${enabled.payment && !state.checkout ? '' : 'disabled'}` } onclick={ (e) => completeAction(e) }>
             { state.checkout ? 'Completing...' : 'Complete Order' }
           </button>
         </div>
       </div>
       <!-- / COMPLETE -->
+
+      <!-- / STEPS -->
     </div>
     
     <div class={ getClass('checkoutSidebar', 'dashup-checkout-cart col-5') }>
 
       <!-- CART -->
-      <div each={ (product, i) in getProducts() } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image', null, 'thumbs.0.2x-sq.url') }>
-          <img src={ getProduct(product, 'image', null, 'thumbs.0.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
+      <div each={ (product, i) in cart.get('products') } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
+        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.thumbs.0.2x-sq.url') }>
+          <img src={ getProduct(product, 'image.thumbs.0.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
         </div>
         <div class={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
           <div class="w-100">
@@ -166,10 +156,10 @@
             </p>
             <p class={ getClass('cartItemPrice', 'dashup-item-price') }>
               <b>
-                ${ (getProduct(product, 'field', 0, 'price') * product.count).toFixed(2) }
+                ${ (getProduct(product, 'field.price') * product.count).toFixed(2) }
               </b>
-              <small if={ getProduct(product, 'field', 0, 'type') === 'subscription' } class={ getClass('cartItemPeriod', 'dashup-item-period ml-2') }>
-                { getProduct(product, 'field', 0, 'period') }
+              <small if={ getProduct(product, 'field.type') === 'subscription' } class={ getClass('cartItemPeriod', 'dashup-item-period ml-2') }>
+                { getProduct(product, 'field.period') || 'Monthly' }
               </small>
             </p>
           </div>
@@ -212,7 +202,7 @@
             <b>${ checkout.discount().toFixed(2) }</b>
           </div>
         </div>
-        <div class={ getClass('checkoutSubtotalLine', 'row mb-2') } if={ checkout.get('data.order.shipping.uuid') }>
+        <div class={ getClass('checkoutSubtotalLine', 'row mb-2') } if={ checkout.get('data.order.shipping') }>
           <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
             Shipping
           </div>
@@ -233,7 +223,7 @@
             Total
           </div>
           <div class={ getClass('checkoutTotalAmount', 'col-4 text-right h4')}>
-            ${ checkout.total(true).toFixed(2) }
+            ${ ((checkout.total() + checkout.shipping()) - checkout.discount()).toFixed(2) }
           </div>
         </div>
       </div>
@@ -245,61 +235,99 @@
   <script>
     // import
     import dotProp from 'dot-prop';
-    import fieldAddress from './field/address.riot.ts';
-    import checkoutStripe from './checkout/stripe.riot.ts';
+
+    // checkout payment
+    import checkoutPayment from './checkout/payment';
 
 		// export default
-    export default {
-      components : {
-        fieldAddress,
-        checkoutStripe,
-      },
+    export default class Checkout {
 
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * get components
+       */
+      static get components() {
+        // return components
+        return {
+          checkoutPayment,
+        };
+      }
+
+      /**
+       * on before mount
+       */
       onBeforeMount(props, state) {
         // initial state
         this.state = {
-          step     : 'information',
-					ready    : true,
-          email    : '',
-          source   : ((props.page.get('connectors') || [])[0] || {}).type,
-          billing  : {},
-          payment  : {},
-          shipping : 'billing',
-          checkout : false,
+          step    : 'information',
+          ready   : false,
+          source  : ((props.page.get('connects') || [])[0] || {}).uuid,
+          billing : {},
+          payment : {},
         };
         this.enabled = {
           payment : false,
         };
 
         // bind methods
-        this.onComplete = this.onComplete.bind(this);
-        this.onContinue = this.onContinue.bind(this);
+        this.completeAction = this.completeAction.bind(this);
+        this.continueAction = this.continueAction.bind(this);
+
+        // bind event methods
+        this.onEnablePayment = this.onEnablePayment.bind(this);
 
         // set dashup
-        this.auth = props.dashup.page(props.page.get('data.auth.id'));
-        this.dashup = props.dashup;
+        this.auth     = props.dashup.page(props.page.get('data.auth'));
+        this.cart     = props.page.cart;
+        this.order    = props.dashup.page(props.page.get('data.order.form'));
+        this.product  = props.dashup.page(props.page.get('data.product.form'));
+
+        // props
+        this.dashup   = props.dashup;
         this.checkout = props.page;
 
         // set steps
-        this.steps = this.checkout.get('data.order.shipping.uuid') ? ['Cart', 'Information', 'Shipping', 'Payment'] : ['Cart', 'Information', 'Payment'];
+        this.steps = this.checkout.get('data.order.shipping') ? ['Cart', 'Information', 'Shipping', 'Payment'] : ['Cart', 'Information', 'Payment'];
 
         // safe update
         this.safeUpdate = () => {
           this.update();
         };
-      },
+      }
 
+      /**
+       * on mounted
+       */
       onMounted(props, state) {
         // add listener
         props.page.on('cart', this.safeUpdate);
-      },
+      }
 
+      /**
+       * on before unmount
+       */
       onBeforeUnmount(props, state) {
         // add listener
         props.page.removeListener('cart', this.safeUpdate);
-      },
+      }
 
-      onContinue(e) {
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // ACTION METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * continue action
+       */
+      continueAction(e) {
         // prevent
         e.preventDefault();
         e.stopPropagation();
@@ -314,9 +342,12 @@
         this.update({
           step : this.steps[this.steps.map(s => s.toLowerCase()).indexOf(this.state.step) + 1].toLowerCase(),
         });
-      },
+      }
 
-      async onComplete(e) {
+      /**
+       * payment pay
+       */
+      async completeAction(e) {
         // prevent
         e.preventDefault();
         e.stopPropagation();
@@ -330,28 +361,36 @@
         });
         
         // create object
-        const products = Object.keys(this.checkout.cart.get('products')).map((id) => {
+        const products = this.checkout.cart.get('products').map(({ product, opts, count }) => {
           // return products
           return {
-            _id   : id,
-            opts  : this.checkout.cart.get(`products.${id}.opts`),
-            count : this.checkout.cart.get(`products.${id}.count`),
+            opts,
+            count,
+            product : product.get('_id'),
           };
         });
 
         // billing/shipping
         const information = {
-          email   : this.state.email || (this.auth.exists() ? this.auth.user.get(this.auth.get('data.field.email.name') || this.auth.get('data.field.email.uuid')) : ''),
+          email   : this.props.email || this.state.email || (this.auth && this.auth.exists() ? this.auth.user.get(this.checkout.field('auth', 'email').name || this.checkout.field('auth', 'email').uuid) : ''),
           address : this.state.billing,
         };
         const shipping = {
           address : this.getShipping(),
         };
+
+        // payment
         const payment = this.state.payment;
 
         // await call
-        const done = await this.dashup.call('checkout.complete', { id : this.checkout.get('_id'), products, information, shipping, payment }, {
-          id : this.checkout.get('_id'),
+        const done = await this.props.dashup.rpc({
+          page   : this.checkout.get('_id'),
+          dashup : this.dashup.get('_id'),
+        }, 'checkout.complete', {
+          payment,
+          products,
+          shipping,
+          information,
         });
 
         // create checkout
@@ -362,16 +401,23 @@
         // check done
         if (done._id) {
           // done
-          if (this.props.onSuccess) this.props.onSuccess(done);
+          if (this.props.onSuccess) this.props.onSuccess(new this.dashup.Model(done, this.dashup));
 
           // clear cart
-          this.checkout.cart.set(`products`, {});
+          this.checkout.cart.set(`products`, []);
           this.checkout.emit('cart', this.checkout.cart);
         } else {
           // on error
           if (this.props.onError) this.props.onerror(done);
         }
-      },
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
 
       onShippingCheck(e) {
         // check
@@ -386,38 +432,42 @@
             shipping : {},
           });
         }
-      },
+      }
 
       onBillingAddress(billing) {
         // update billing
         this.update({
           billing,
         });
-      },
+      }
 
       onShippingAddress(shipping) {
         // update billing
         this.update({
           shipping,
         });
-      },
+      }
 
       onEmail(e) {
         // update
         this.update({
           email : e.target.value,
         });
-      },
+      }
 
-      onEnablePayment(type, value) {
+      onEnablePayment(connect, value) {
         // enable payment
         this.enabled.payment = true;
 
         // add to state
         this.update({
-          payment : { type, value },
+          payment : {
+            uuid : connect.uuid,
+            type : connect.type,
+            value,
+          },
         });
-      },
+      }
 
       onDisablePayment() {
         // enable payment
@@ -427,11 +477,11 @@
         this.update({
           payment : null,
         });
-      },
+      }
 
       onInformation() {
         // check information
-        const can = (this.checkout.get('data.order.billing.uuid') ? Object.keys(this.state.billing).length : true) && this.auth.exists() || this.state.email.length;
+        const can = (this.checkout.get('data.order.billing') ? Object.keys(this.state.billing).length : true) && ((this.auth && this.auth.exists()) || this.props.email.length || this.state.email.length);
         
         // check can
         if (can) {
@@ -442,7 +492,7 @@
           items.push({
             key   : 'Contact',
             step  : 'information',
-            value : this.state.email || (this.auth.exists() ? this.auth.user.get(this.auth.get('data.field.email.name') || this.auth.get('data.field.email.uuid')) : ''),
+            value : this.props.email || this.state.email || (this.auth && this.auth.exists() ? this.auth.user.get(this.checkout.field('auth', 'email').name || this.checkout.field('auth', 'email').uuid) : ''),
           });
 
           // update items
@@ -453,7 +503,7 @@
 
         // return can
         return can;
-      },
+      }
 
       onShipping() {
         // return shipping
@@ -484,7 +534,7 @@
 
         // return can
         return can;
-      },
+      }
 
       onBack(e) {
         // prevent
@@ -498,8 +548,18 @@
         this.update({
           step : this.steps[index - 1].toLowerCase(),
         });
-      },
+      }
 
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+      
+      /**
+       * get class
+       */
       getClass(name, def) {
         // get classes
         const classes = this.props.classes || {};
@@ -509,29 +569,63 @@
 
         // return props
         return classes[name];
-      },
+      }
 
-      getProducts() {
-        // get products
-        const products = this.checkout && this.checkout.cart ? this.checkout.cart.get('products') : {};
+      /**
+       * get product field
+       */
+      getProduct(product, key, d) {
+        // product field
+        const productField = this.checkout.field('product', key.split('.')[0]) || {};
 
-        // return products
-        return Object.values(products);
-      },
-
-      getProduct(product, key, d, extra) {
         // return
-        return dotProp.get(product, `product.${this.checkout.get(`data.product.${key}.name`) || this.checkout.get(`data.product.${key}.uuid`)}${extra ? `.${extra}` : ''}`) || d;
-      },
+        return dotProp.get(product.product.get(), `${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
+      }
 
+      /**
+       * get is billing
+       */
       getIsBilling() {
         // check billing
         return this.state.shipping === 'billing' ? { checked : true } : {};
-      },
+      }
 
+      /**
+       * get is shipping
+       */
       getShipping() {
         // return shipping
         return this.state.shipping === 'billing' ? this.state.billing : this.state.shipping;
+      }
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
       }
     }
 

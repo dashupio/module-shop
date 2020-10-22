@@ -28,7 +28,7 @@
       <label class="form-label">
         Order { field.name }
       </label>
-      <eden-select on-change={ (e, val) => onField('order', field.name.split(' ')[0].toLowerCase(), val) } ref={ ref(`order-${field.name.split(' ')[0].toLowerCase()}`) } placeholder="Select Field" data={ getField('order', field.name.split(' ')[0].toLowerCase()) } />
+      <eden-select on-change={ (e, val) => onField('order', field.name.split(' ')[0].toLowerCase(), val) } ref={ ref(`order-${field.name.split(' ')[0].toLowerCase()}`) } placeholder="Select Field" data={ getField('order', field.name.split(' ')[0].toLowerCase(), field.type) } />
     </div>
 
     <hr />
@@ -56,7 +56,7 @@
           <label class="form-label">
             Product { field.name }
           </label>
-          <eden-select on-change={ (e, val) => onField('product', field.name.toLowerCase(), val) } ref={ ref(`product-${field.name.toLowerCase()}`) } placeholder="Select Field" data={ getField('product', field.name.toLowerCase()) } />
+          <eden-select on-change={ (e, val) => onField('product', field.name.toLowerCase(), val) } ref={ ref(`product-${field.name.toLowerCase()}`) } placeholder="Select Field" data={ getField('product', field.name.toLowerCase(), field.type) } />
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
           type : 'text',
         }, {
           name : 'Description',
-          type : 'textarea-wysiwyg',
+          type : ['textarea', 'wysiwyg'],
         }];
 
         // order fields
@@ -289,14 +289,14 @@
       /**
        * get field
        */
-      getField(base, type) {
+      getField(base, name, type) {
         // return value
-        return this.getFields(this.props.page.get(`data.${base}.form`)).map((field) => {
+        return [...(this.getFields(this.props.page.get(`data.${base}.form`)))].filter((field) => type.includes(field.type)).map((field) => {
           // return value
           return {
             name     : field.label,
             value    : field.uuid,
-            selected : this.props.page.get(`data.${base}.${type}`) === field.uuid,
+            selected : this.props.page.get(`data.${base}.${name}`) === field.uuid,
           };
         });
       }

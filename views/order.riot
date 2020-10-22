@@ -17,14 +17,14 @@
         <div class="card">
           <div each={ (item, i) in state.items } class="card-header">
             <div class="row">
-              <div class="col-3">
+              <div class="col-5">
                 <b>
                   <small>
                     { item.key }
                   </small>
                 </b>
               </div>
-              <div class="col-9">
+              <div class="col-7">
                 <small class="text-overflow">
                   { item.value }
                 </small>
@@ -36,19 +36,19 @@
         <hr />
       </div>
       
-      <div if={ getSource() }>
-        <div is={ `order-${getSource().type}` } payment={ getPayment() } source={ getSource() } { ...props } />
+      <div if={ getOrder('field.payments') }>
 
-        <hr />
+        <order-payment each={ (payment, i) in getOrder('field.payments') } payment={ payment } { ...props } />
+
       </div>
     </div>
     
     <div class={ getClass('orderSidebar', 'dashup-order-cart col-5') }>
 
       <!-- CART -->
-      <div each={ (product, i) in getProducts() } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image') }>
-          <img src={ getProduct(product, 'image') } class={ getClass('cartItemImageImg', 'img-fluid') } />
+      <div if={ state.ready } each={ (product, i) in getOrder('field.products', []) } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
+        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.thumbs.0.2x-sq.url') }>
+          <img src={ getProduct(product, 'image.thumbs.0.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
         </div>
         <div class={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
           <div class="w-100">
@@ -61,27 +61,26 @@
             </p>
             <p class={ getClass('cartItemPrice', 'dashup-item-price') }>
               <b>
-                ${ (getProduct(product, 'price', 0) * product.count).toFixed(2) }
+                ${ (getProduct(product, 'field.price') * product.count).toFixed(2) }
               </b>
-              <small if={ getProduct(product, 'type') === 'subscription' } class={ getClass('cartItemPeriod', 'dashup-item-period ml-2') }>
-                { getProduct(product, 'period') }
+              <small if={ getProduct(product, 'field.type') === 'subscription' } class={ getClass('cartItemPeriod', 'dashup-item-period ml-2') }>
+                { getProduct(product, 'field.period') || 'Monthly' }
               </small>
             </p>
           </div>
         </div>
       </div>
-
       <!-- / CART -->
 
       <hr />
 
       <!-- SUB TOTAL -->
       <div class={ getClass('orderSubtotal', 'dashup-subtotal') } if={ state.ready }>
-        <div each={ entry in Object.entries(getSubTotals()) } class={ getClass('orderSubtotalLine', 'row mb-2') }>
-          <div class={ getClass('orderSubtotalLabel', 'col-8') }>
+        <div each={ entry in Object.entries(checkout.totals(getOrder('field.products', []))) } class={ getClass('checkoutSubtotalLine', 'row mb-2') }>
+          <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
             { `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` }
           </div>
-          <div class={ getClass('orderSubtotalAmount', 'col-4 text-right')}>
+          <div class={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
             <b>${ entry[1].toFixed(2) }</b>
           </div>
         </div>
@@ -93,7 +92,7 @@
             <b>${ getDiscount().toFixed(2) }</b>
           </div>
         </div>
-        <div class={ getClass('orderSubtotalLine', 'row mb-2') } if={ checkout.get('data.order.shipping.uuid') }>
+        <div class={ getClass('orderSubtotalLine', 'row mb-2') } if={ checkout.get('data.order.shipping') }>
           <div class={ getClass('orderSubtotalLabel', 'col-8') }>
             Shipping
           </div>
@@ -114,7 +113,7 @@
             Total
           </div>
           <div class={ getClass('orderTotalAmount', 'col-4 text-right h4')}>
-            ${ getTotal().toFixed(2) }
+            ${ ((checkout.total(getOrder('field.products', [])) + getShipping()) - getDiscount()).toFixed(2) }
           </div>
         </div>
       </div>
@@ -126,99 +125,140 @@
   <script>
     // import
     import dotProp from 'dot-prop';
-    import orderStripe from './order/stripe.riot.ts';
+
+    // checkout payment
+    import orderPayment from './order/payment';
 
 		// export default
-    export default {
-      components : {
-        orderStripe,
-      },
+    export default class Order {
 
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * return components
+       */
+      static get components() {
+        // return components
+        return {
+          orderPayment,
+        };
+      }
+
+      /**
+       * on before mount,
+       */
       onBeforeMount(props, state) {
         // initial state
         this.state = {
-          items : [],
           order : null,
 					ready : false,
         };
 
+        // bind methods
+        this.getOrder = this.getOrder.bind(this);
+
         // set dashup
-        this.auth = props.dashup.page(props.page.get('data.auth.id'));
+        this.auth = props.dashup.page(props.page.get('data.auth'));
+        this.order = props.dashup.page(props.page.get('data.order.form'));
         this.dashup = props.dashup;
-        this.orders = props.dashup.page(props.page.get('data.order.form.id'));
         this.checkout = props.page;
 
         // safe update
         this.safeUpdate = () => {
           this.update();
         };
-      },
+      }
 
+      /**
+       * on mounted
+       */
       async onMounted(props, state) {
         // add listener
-        if (props.order) {
-          // check order
-          const order = await this.orders.listenById(props.order);
+        if (!props.order) return;
+      
+        // check order
+        const order = await this.order.listenById(props.order);
 
-          // safe update
-          order.on('update', this.safeUpdate);
+        // safe update
+        order.on('update', this.safeUpdate);
 
-          // items
-          const items = [{
-            key   : 'Contact',
-            value : order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.information.email`),
-          }];
+        // fields
+        const orderField = this.checkout.field('order', 'field');
+        const productField = this.checkout.field('product', 'field');
 
-          // shipping
-          const billing = order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.information.address`);
+        // items
+        const items = [{
+          key   : 'Contact',
+          value : order.get(`${orderField.name || orderField.uuid}.information.email`),
+        }];
 
-          // shipping
-          if (billing && billing.first) {
-            items.push({
-              key   : 'Bill to',
-              value : `${billing.first || ''} ${billing.last || ''}`,
-            }, {
-              key   : '',
-              value : `
-                ${billing.street ? `${billing.street},` : ''}
-                ${billing.city ? `${billing.city}` : ''}
-                ${billing.postcode ? `${billing.postcode},` : ''}
-                ${billing.country ? `${billing.country}` : ''}`,
-            });
-          }
+        // shipping
+        const billing = order.get(`${orderField.name || orderField.uuid}.information.address`);
 
-          // shipping
-          const shipping = order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.shipping.address`);
-
-          // shipping
-          if (shipping && Object.keys(shipping).length) {
-            items.push({
-              key   : 'Ship to',
-              value : `${shipping.first || ''} ${shipping.last || ''}`,
-            }, {
-              key   : '',
-              value : `
-                ${shipping.street ? `${shipping.street},` : ''}
-                ${shipping.city ? `${shipping.city}` : ''}
-                ${shipping.postcode ? `${shipping.postcode},` : ''}
-                ${shipping.country ? `${shipping.country}` : ''}`,
-            });
-          }
-
-          // update
-          this.update({
-            order,
-            items,
-            ready : true,
+        // shipping
+        if (billing && billing.first) {
+          items.push({
+            key   : 'Bill to',
+            value : `${billing.first || ''} ${billing.last || ''}`,
+          }, {
+            key   : '',
+            value : `
+              ${billing.street ? `${billing.street},` : ''}
+              ${billing.city ? `${billing.city}` : ''}
+              ${billing.postcode ? `${billing.postcode},` : ''}
+              ${billing.country ? `${billing.country}` : ''}`,
           });
         }
-      },
 
+        // shipping
+        const shipping = order.get(`${orderField.name || orderField.uuid}.shipping.address`);
+
+        // shipping
+        if (shipping && Object.keys(shipping).length) {
+          items.push({
+            key   : 'Ship to',
+            value : `${shipping.first || ''} ${shipping.last || ''}`,
+          }, {
+            key   : '',
+            value : `
+              ${shipping.street ? `${shipping.street},` : ''}
+              ${shipping.city ? `${shipping.city}` : ''}
+              ${shipping.postcode ? `${shipping.postcode},` : ''}
+              ${shipping.country ? `${shipping.country}` : ''}`,
+          });
+        }
+
+        // update
+        this.update({
+          order,
+          items,
+          ready : true,
+        });
+      }
+      
+      /**
+       * on before unmount
+       */
       onBeforeUnmount(props, state) {
         // safe update
         if (this.state.order) this.state.order.removeListener('update', this.safeUpdate);
-      },
+      }
 
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * get class
+       */
       getClass(name, def) {
         // get classes
         const classes = this.props.classes || {};
@@ -228,94 +268,50 @@
 
         // return props
         return classes[name];
-      },
+      }
 
-      getProducts() {
-        // get products
-        const products = this.state.order ? this.state.order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.products`) || [] : [];
-
-        // return products
-        return products;
-      },
-
-      getTotal() {
-        // return total
-        return this.getPayment() ? this.getPayment().total || 0 : 0;
-      },
-
-      getSubTotals() {
-        // get total
-        const types = this.getProducts().reduce((accum, product) => {
-          // get type
-          const type = product.type;
-          const period = product.period;
-
-          // check type
-          const actualType = type === 'subscription' ? period : 'subtotal';
-
-          // check type
-          if (!accum.includes(actualType)) accum.push(actualType);
-
-          // return accum
-          return accum;
-        }, []);
-
-        // totals
-        let totals = types.reduce((accum, t) => {
-          // return total
-          accum[t] = this.getProducts().filter((product) => {
-            // get type
-            const type = product.type;
-            const period = product.period;
-
-            // check type
-            const actualType = type === 'subscription' ? period : 'subtotal';
-
-            // type
-            return actualType === t;
-          }).reduce((accum, product) => {
-            console.log(accum, product);
-            // return value
-            return accum + (product.price * product.count);
-          }, 0);
-
-          // return accum
-          return accum;
-        }, {});
-
-        // totals
-        if (!Object.keys(totals).length) {
-          totals = { 'subtotal' : 0 };
-        }
-
-        // return total
-        return totals;
-      },
-
+      /**
+       * get discount
+       */
       getDiscount() {
         // return total
-        return this.getPayment() ? this.getPayment().discount || 0 : 0;
-      },
+        return 0;
+      }
 
-      getProduct(product, key, d, extra) {
+      /**
+       * get shipping
+       */
+      getShipping() {
+        // return total
+        return 0;
+      }
+
+      /**
+       * get product field
+       */
+      getOrder(key, d) {
+        // order
+        const order = this.state.order;
+
+        // check order
+        if (!order) return;
+
+        // product field
+        const orderField = this.checkout.field('order', key.split('.')[0]) || {};
+
         // return
-        return dotProp.get(product, `${key}${extra ? `.${extra}` : ''}`) || d;
-      },
+        return dotProp.get(order.get(), `${orderField.name || orderField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
+      }
 
-      getPayment() {
-        // return source
-        return this.state.order ? this.state.order.get(`${this.props.page.get('data.order.field.name') || this.props.page.get('data.order.field.uuid')}.payment`) : null;
-      },
+      /**
+       * get product field
+       */
+      getProduct(product, key, d) {
+        // product field
+        const productField = this.checkout.field('product', key.split('.')[0]) || {};
 
-      getSource() {
-        // get payment
-        const type = this.getPayment() ? this.getPayment().type : null;
-
-        // check type
-        if (!type) return;
-
-        // return payment type
-        return this.checkout.get('connectors').find(s => s.uuid === type);
+        // return
+        return dotProp.get(product.product, `${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
       }
     }
 

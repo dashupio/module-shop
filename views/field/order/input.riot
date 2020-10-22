@@ -1,0 +1,446 @@
+<field-order-input>
+  <div>
+    <div class="card mb-3 border bg-transparent">
+      <div class="card-header border-bottom">
+        { props.field.label || 'Set Label' }
+      </div>
+
+      <div class="card-body">
+        <!-- CHECKOUT -->
+        <div class="mb-3">
+          <label class="form-label">
+            Checkout Module
+          </label>
+          <eden-select on-change={ (e, val) => onCheckout(val) } name={ props.getName(`${props.field.uuid}[checkout]`) } ref={ ref('checkout') } placeholder="Select Module" data={ getCheckout() } />
+        </div>
+        <!-- / CHECKOUT -->
+
+        <div>
+          <div class="mb-3">
+
+            <!-- CART -->
+            <div if={ value.checkout } class="card bg-transparent border mb-3">
+              <div class="card-header border-bottom">
+                Products
+              </div>
+              <div class="card-body">
+                <div class="row" each={ (product, i) in value.products }>
+                  <div class="col-6">
+                    <div class="row">
+                      <div class="col-3">
+                        <img src={ getImage(product) } class="img-fluid" />
+                      </div>
+                      <div class="col-9 d-flex align-items-center">
+                        <div class="w-100">
+                          <p class="dashup-item-title m-0">
+                            <b>{ product.name }</b>
+                          </p>
+                          <p class="dashup-item-price m-0">
+                            <b>{ product.count.toLocaleString() }</b>
+                            <span class="mx-2">-</span>
+                            ${ product.price.toFixed(2) }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-3 d-flex align-items-center">
+                    <div class="w-100 text-right">
+                      ${ product.price.toFixed(2) }
+                      <span class="mx-2">x</span>
+                      { product.count.toLocaleString() }
+                    </div>
+                  </div>
+                  <div class="col-3 d-flex align-items-center">
+                    <div class="w-100 text-right">
+                      ${ product.total.toFixed(2) }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- / CART -->
+
+            <!-- PAYMENT -->
+            <div class="card border bg-transparent" if={ value.checkout }>
+              <div class="card-header border-bottom">
+                Payment
+              </div>
+
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">
+                    { props.field.label } Payment Total
+                  </label>
+                  <div class="input-group">
+                    <div class="input-group-prepend">
+                      <div class="input-group-text">
+                        $
+                      </div>
+                    </div>
+                    <input type="number" ref={ ref('type') } class="form-control" step="0.01" readonly placeholder={ `${ props.field.label } Payment Total` } value={ value.payment && value.payment.total || 0 } name={ props.getName(`${props.field.uuid}[payment][total]`) } />
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">
+                    { props.field.label } Payment Type
+                  </label>
+                  <eden-select ref={ ref('type') } placeholder={ `${ props.field.label } Payment Type` } data={ getType() } on-change={ (e, val) => onType(val) } name={ props.getName(`${props.field.uuid}[payment][type]`) } />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">
+                    { props.field.label } Payment Status
+                  </label>
+                  <eden-select ref={ ref('status') } placeholder={ `${ props.field.label } Payment Status` } data={ getStatus() } on-change={ (e, val) => onStatus(val) } name={ props.getName(`${props.field.uuid}[payment][status]`) } />
+                </div>
+      
+                <!-- PAYMENT -->
+                <div class={ `${ classes({ 'empty' : !props.getFields(`${props.field.uuid}.payment`).length, 'eden-dropzone' : !props.preview }) }` } data-form={ props.placement } data-parent={ `${props.field.uuid}.payment` }>
+                  <span class="eden-dropzone-label" if={ !props.preview }>
+                    { props.field.label } Payment
+                  </span>
+
+                  <eden-add type="top" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+                  <div class="row form-fields">
+                    <template each={ (field, i) in props.getFields(`${props.field.uuid}.payment`) }>
+                      <eden-field-input { ...getProps(field, 'payment') } />
+                      <div if={ field.break } class="w-100" />
+                    </template>
+                  </div>
+
+                  <eden-add type="bottom" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+                </div>
+                <!-- / PAYMENT -->
+
+                <div if={ value.payment } is="field-order-stripe" value={ value } { ...props } />
+              </div>
+
+            </div>
+          </div>
+          <div>
+            <div class="card border bg-transparent mb-3">
+
+              <!-- INFORMATION -->
+              <div>
+                <div class="card-header border-bottom">
+                  Information
+                </div>
+
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label class="form-label">
+                      { props.field.label } Contact
+                    </label>
+                    <input type="email" ref={ ref('email') } placeholder={ `${ props.field.label } Contact` } value={ getEmail() } onchange={ (e) => onEmail(e) } name={ props.getName(`${props.field.uuid}[information][email]`) } class="form-control" />
+                  </div>
+      
+                  <!-- INFORMATION -->
+                  <div class={ `${ classes({ 'empty' : !props.getFields(`${props.field.uuid}.info`).length, 'eden-dropzone' : !props.preview }) }` } data-form={ props.placement } data-parent={ `${props.field.uuid}.info` }>
+                    <span class="eden-dropzone-label" if={ !props.preview }>
+                      { props.field.label } Information
+                    </span>
+
+                    <eden-add type="top" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+                    <div class="row form-fields">
+                      <template each={ (field, i) in props.getFields(`${props.field.uuid}.info`) }>
+                        <eden-field-input { ...getProps(field, 'info') } />
+                        <div if={ field.break } class="w-100" />
+                      </template>
+                    </div>
+
+                    <eden-add type="bottom" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+                  </div>
+                  <!-- / INFORMATION -->
+                  
+                </div>
+              </div>
+              <!-- / INFORMATION -->
+
+              <!-- SHIPPING -->
+              <div if={ props.field.shipping }>
+                <div class="card-header border-bottom border-top">
+                  Shipping
+                </div>
+
+                <div class="card-body">
+      
+                  <!-- SHIPPING -->
+                  <div class={ `${ classes({ 'empty' : !props.getFields(`${props.field.uuid}.shipping`).length, 'eden-dropzone' : !props.preview }) }` } data-form={ props.placement } data-parent={ `${props.field.uuid}.shipping` }>
+                    <span class="eden-dropzone-label" if={ !props.preview }>
+                      { props.field.label } Shipping
+                    </span>
+
+                    <eden-add type="top" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+                    <div class="row form-fields">
+                      <template each={ (field, i) in props.getFields(`${props.field.uuid}.shipping`) }>
+                        <eden-field-input { ...getProps(field, 'shipping') } />
+                        <div if={ field.break } class="w-100" />
+                      </template>
+                    </div>
+
+                    <eden-add type="bottom" onclick={ (e) => props.createAction(e) } if={ !props.preview } />
+
+                  </div>
+                  <!-- / SHIPPING -->
+
+                </div>
+              </div>
+              <!-- SHIPPING -->
+            </div>
+            
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+  
+  <script>
+  
+    // export default
+    export default class FieldOrderInput {
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // RIOT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on before mount
+       */
+      onBeforeMount() {
+        // set initial value
+        this.value = this.props.value || {};
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // EVENT METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on type
+       */
+      onType(val) {
+        // payment
+        if (!this.value.payment) this.value.payment = {};
+
+        // set value
+        this.value.payment.type = val;
+
+        // update
+        this.update();
+      }
+
+      /**
+       * on type
+       */
+      onStatus(val) {
+        // payment
+        if (!this.value.payment) this.value.payment = {};
+
+        // set value
+        this.value.payment.status = val;
+
+        // update
+        this.update();
+      }
+
+      /**
+       * on type
+       */
+      onEmail(e) {
+        // payment
+        if (!this.value.information) this.value.information = {};
+
+        // set value
+        this.value.information.email = e.target.value;
+
+        // update
+        this.update();
+      }
+
+      /**
+       * on type
+       */
+      onCheckout(val) {
+        // get value
+        if (!val) val = this.refs.checkout.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // set field checkout
+        this.value.checkout = val;
+
+        // update
+        this.update();
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // GET METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * get props
+       */
+      getProps(field, type) {
+        // get parent
+        const actual = this.props.getProps(field);
+
+        // get name
+        actual.getName = (name) => this.getName(name, type);
+
+        // return actual
+        return actual;
+      }
+
+      /**
+       * get name
+       */
+      getName(name, type) {
+        // check split
+        const split = name.split('[');
+
+        // return name
+        if (split.length > 1) {
+          // 
+          return `${this.props.field.uuid}[${type}][${split.shift()}][${split.join('[')}`;
+        }
+
+        // return name
+        return `${this.props.field.uuid}[${type}][${name}]`;
+      }
+
+      /**
+       * get image
+       */
+      getImage(product) {
+        // return title
+        let img = product.image;
+
+        // check image
+        if (!Array.isArray(img)) img = [img];
+        
+        // return url
+        return (((img[0] || {}).thumbs || {})['2x-sq'] || {}).url;
+      }
+
+      /**
+       * get value
+       */
+      getType() {
+        // return frontend
+        if (typeof window === 'undefined') return [];
+
+        // return
+        return [];
+
+        // @todo
+      }
+
+      /**
+       * get value
+       */
+      getStatus() {
+        // return value
+        const types = [['pending', 'Pending'], ['declined', 'Declined'], ['paid', 'Paid']];
+
+        // return mapped types
+        return types.map((item) => {
+          // return value
+          return {
+            name     : item[1],
+            value    : item[0],
+            selected : (this.value.payment || {}).status === item[0],
+          };
+        });
+      }
+
+      /**
+       * get contact
+       */
+      getEmail() {
+        // return email value
+        return (this.value.information || {}).email || '';
+      }
+
+      /**
+       * get value
+       */
+      getCheckout() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'checkout';
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.value.checkout === page.get('_id'),
+          };
+        });
+      }
+
+
+      // ////////////////////////////////////////////////////////////////////////////
+      //
+      // MISC METHODS
+      //
+      // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * ref
+       */
+      ref(name) {
+        // set refs
+        if (!this.refs) this.refs = {};
+
+        // return ref function
+        return (that) => {
+          // set ref
+          this.refs[name] = that;
+        };
+      }
+      
+      /**
+       * set classes
+       */
+      classes(obj = {}) {
+        // return classes
+        return Object.keys(obj).filter((key) => !!obj[key]).join(' ');
+      }
+
+      /**
+       * set loading
+       */
+      loading(type, way) {
+        // set loading
+        if (!this.__loading) this.__loading = new Map();
+
+        // check loading
+        if (!type) return !!Array.from(this.__loading.values()).find((v) => v);
+        if (typeof way === 'undefined') return !!this.__loading.get(type);
+
+        // set loading
+        this.__loading.set(type, way);
+        this.update();
+      }
+    }
+    
+  </script>
+</field-order-input>
