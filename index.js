@@ -5,7 +5,6 @@ const { Module } = require('@dashup/module');
 const OrderField = require('./fields/order');
 const ProductField = require('./fields/product');
 const CheckoutPage = require('./pages/checkout');
-const StripeConnect = require('./connects/stripe');
 
 /**
  * export module
@@ -24,9 +23,6 @@ class ShopModule extends Module {
     // register field action
     fn('field', OrderField);
     fn('field', ProductField);
-
-    // register payments
-    fn('connect', StripeConnect);
   }
 }
 
