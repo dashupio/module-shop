@@ -163,7 +163,7 @@
         this.getOrder = this.getOrder.bind(this);
 
         // set dashup
-        this.auth = props.dashup.page(props.page.get('data.auth'));
+        this.auth = props.page.get('data.auth') ? props.dashup.page(props.page.get('data.auth')) : null;
         this.order = props.dashup.page(props.page.get('data.order.form'));
         this.dashup = props.dashup;
         this.checkout = props.page;
@@ -273,8 +273,35 @@
       /**
        * get discount
        */
-      getDiscount() {
-        // return total
+      getDiscount(total) {
+        // order
+        const order = this.state.order;
+
+        // check order
+        if (!order) return 0;
+
+        // get discount
+        const discount = this.getOrder('field.discount', null);
+
+        // check order
+        if (!discount) return 0;
+
+        // total
+        if (!total) total = this.checkout.total(this.getOrder('field.products', []));
+
+        // parse
+        total = parseFloat(total);
+
+        // check value
+        if (!discount.type || discount.type === 'amount') {
+          // return discount
+          return parseFloat(discount.value || '0');
+        } else if (discount.type === 'percent') {
+          // return discount
+          return (parseFloat(discount.value || '0') / 100) * total;
+        }
+
+        // get discount
         return 0;
       }
 

@@ -2,7 +2,7 @@
   <div>
     <div class="mb-3">
       <label class="form-label">
-        Auth Module
+        Auth Module (optional)
       </label>
       <!-- TODO move to @dashup calls -->
       <eden-select on-change={ (e, val) => onAuth(val) } ref={ ref('auth') } placeholder="Select Auth Module" data={ getAuth() } />
@@ -60,6 +60,37 @@
         </div>
       </div>
     </div>
+
+    <hr />
+
+    <div class="mb-3">
+      <label class="form-label">
+        Discount Model (optional)
+      </label>
+      <!-- TODO move to @dashup calls -->
+      <eden-select on-change={ (e, val) => onDiscount(val) } ref={ ref('discount') } placeholder="Select Discount Model" data={ getDiscount() } />
+    </div>
+    
+    <div class="mb-3" if={ props.page.get('data.discount.model') }>
+      <label class="form-label">
+        Discount Form
+      </label>
+      <eden-select on-change={ (e, val) => onDiscountForm(val) } ref={ ref('discountForm') } placeholder="Select Form" data={ getDiscountForm() } />
+    </div>
+    
+    <div class="card border bg-white" if={ props.page.get('data.discount.form') }>
+      <div class="card-header">
+        Discount Fields
+      </div>
+      <div class="card-body">
+        <div class="mb-3" each={ (field, i) in discountFields }>
+          <label class="form-label">
+            Discount { field.name }
+          </label>
+          <eden-select on-change={ (e, val) => onField('discount', field.name.toLowerCase(), val) } ref={ ref(`discount-${field.name.toLowerCase()}`) } placeholder="Select Field" data={ getField('discount', field.name.toLowerCase(), field.type) } />
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -88,6 +119,18 @@
         this.orderFields = [{
           name : 'Field',
           type : 'order',
+        }];
+
+        // order fields
+        this.discountFields = [{
+          name : 'Code',
+          type : 'text',
+        }, {
+          name : 'Uses',
+          type : 'number',
+        }, {
+          name : 'Discount',
+          type : 'discount',
         }];
       }
 
@@ -188,6 +231,44 @@
         
         // set model
         this.props.data('product', product);
+      }
+
+      // DISCOUNT EVENTS
+
+      /**
+       * on model
+       */
+      onDiscount(val) {
+        // get value
+        if (!val) val = this.refs.discount.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // get order
+        const discount = this.props.page.get('data.discount') || {};
+        discount.model = val;
+        
+        // set model
+        this.props.data('discount', discount);
+      }
+
+      /**
+       * on model
+       */
+      onDiscountForm(val) {
+        // get value
+        if (!val) val = this.refs.discountForm.val();
+
+        // model
+        if (!val || !val.length) return;
+
+        // get order
+        const discount = this.props.page.get('data.discount') || {};
+        discount.form = val;
+        
+        // set model
+        this.props.data('discount', discount);
       }
 
       /**
@@ -335,6 +416,44 @@
             name     : page.get('name'),
             value    : page.get('_id'),
             selected : this.props.page.get('data.product.form') === page.get('_id'),
+          };
+        });
+      }
+
+      // DISCOUNT VALUES
+
+      /**
+       * get value
+       */
+      getDiscount() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'model';
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.discount.model') === page.get('_id'),
+          };
+        });
+      }
+
+      /**
+       * get value
+       */
+      getDiscountForm() {
+        // return value
+        return Array.from(this.props.dashup.get('pages').values()).filter((page) => {
+          // return model pages
+          return page.get('type') === 'form' && page.get('data.model') === this.props.page.get('data.discount.model');
+        }).map((page) => {
+          // return type
+          return {
+            name     : page.get('name'),
+            value    : page.get('_id'),
+            selected : this.props.page.get('data.discount.form') === page.get('_id'),
           };
         });
       }

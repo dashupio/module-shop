@@ -5,6 +5,7 @@ const { Module } = require('@dashup/module');
 const OrderField = require('./fields/order');
 const ProductField = require('./fields/product');
 const CheckoutPage = require('./pages/checkout');
+const DiscountField = require('./fields/discount');
 
 /**
  * export module
@@ -23,6 +24,7 @@ class ShopModule extends Module {
     // register field action
     fn('field', OrderField);
     fn('field', ProductField);
+    fn('field', DiscountField);
   }
 }
 

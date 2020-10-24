@@ -170,15 +170,25 @@
       <hr />
 
       <!-- DISCOUNT -->
-      <div class={ getClass('checkoutDiscount', 'dashup-discount row') }>
-        <div class={ getClass('checkoutDiscountInputWrap', 'col-8') }>
-          <input class={ getClass('checkoutDiscountInput', 'form-control') } placeholder="Discount code" />
+      <div if={ props.page.get('data.discount.model') } class={ getClass('checkoutDiscount', 'dashup-discount d-flex flex-row') }>
+        <div class={ getClass('checkoutDiscountInputWrap', 'flex-1') }>
+          <input class={ getClass('checkoutDiscountInput', 'form-control') } ref="discount" placeholder="Discount code" />
         </div>
-        <div class={ getClass('checkoutDiscountBtnWrap', 'col-4') }>
-          <button class={ getClass('checkoutButton', 'btn btn-block btn-dark') }>
-            Apply
+        <div class={ getClass('checkoutDiscountBtnWrap', 'flex-0 ml-3') }>
+          <button class={ `${getClass('checkoutButton', 'btn btn-block btn-dark')}${loading('discount') ? ' disabled' : ''}` } onclick={ (e) => onDiscount(e) }>
+            { loading('discount') ? 'Applying...' : 'Apply' }
           </button>
         </div>
+      </div>
+      <div if={ cart.get('discount') } class="mt-2 d-flex align-items-center">
+        <b class="mr-2">
+          { getDiscount('code') }
+        </b>
+        { getDiscount('discount.type', 'amount') === 'amount' ? '$' : '' }{ parseFloat(getDiscount('discount.value')).toFixed(2) }{ getDiscount('discount.type', 'amount') === 'amount' ? '' : '%' }
+        Off
+        <button class={ `btn btn-sm btn-secondary ml-auto${loading('discount') ? ' disabled' : ''}` } onclick={ (e) => onDiscountRemove(e) }>
+          <i class={ loading('discount') ? 'fa fa-spinner fa-spin' : 'fa fa-times' } />
+        </button>
       </div>
       <!-- / DISCOUNT -->
 
@@ -194,7 +204,7 @@
             <b>${ entry[1].toFixed(2) }</b>
           </div>
         </div>
-        <div class={ getClass('checkoutSubtotalLine', 'row mb-2') } if={ checkout.discount() }>
+        <div class={ getClass('checkoutSubtotalLine', 'row mb-2') } if={ checkout.discount(checkout.total()) }>
           <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
             Discount
           </div>
@@ -223,7 +233,7 @@
             Total
           </div>
           <div class={ getClass('checkoutTotalAmount', 'col-4 text-right h4')}>
-            ${ ((checkout.total() + checkout.shipping()) - checkout.discount()).toFixed(2) }
+            ${ ((checkout.total() + checkout.shipping()) - checkout.discount(checkout.total())).toFixed(2) }
           </div>
         </div>
       </div>
@@ -283,7 +293,7 @@
         this.onEnablePayment = this.onEnablePayment.bind(this);
 
         // set dashup
-        this.auth     = props.dashup.page(props.page.get('data.auth'));
+        this.auth     = props.page.get('data.auth') ? props.dashup.page(props.page.get('data.auth')) : null;
         this.cart     = props.page.cart;
         this.order    = props.dashup.page(props.page.get('data.order.form'));
         this.product  = props.dashup.page(props.page.get('data.product.form'));
@@ -379,6 +389,9 @@
           address : this.getShipping(),
         };
 
+        // discount
+        const discount = this.checkout.cart.get('discount') ? this.checkout.cart.get('discount').get('_id') : null;
+
         // payment
         const payment = this.state.payment;
 
@@ -389,6 +402,7 @@
         }, 'checkout.complete', {
           payment,
           products,
+          discount,
           shipping,
           information,
         });
@@ -418,6 +432,76 @@
       // EVENT METHODS
       //
       // ////////////////////////////////////////////////////////////////////////////
+
+      /**
+       * on discount
+       */
+      async onDiscount(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // product field
+        const discountCodeField = this.checkout.field('discount', 'code') || {};
+        const discountUsesField = this.checkout.field('discount', 'uses') || {};
+
+        // loading discount
+        this.loading('discount', true);
+
+        // get code
+        const code = this.$('[ref="discount"]').value;
+
+        // check code
+        if (!(code || '').length) return;
+
+        // check code
+        let discount = this.props.dashup.page(this.checkout.get('data.discount.form')).where({
+          [discountCodeField.name || discountCodeField.uuid] : code,
+        });
+
+        // uses
+        if (discountUsesField) {
+          discount = discount.gt(discountUsesField.name || discountUsesField.uuid, 0);
+        }
+
+        // find one
+        discount = await discount.findOne();
+
+        // set discount
+        if (!discount) {
+          // discount
+          this.update({
+            discount : 'Code not found',
+          });
+
+          // return
+          return this.loading('discount', false);
+        }
+
+        // set discount
+        await this.checkout.code(discount);
+
+        // loading discount
+        this.loading('discount', false);
+      }
+
+      /**
+       * on discount remove
+       */
+      async onDiscountRemove(e) {
+        // prevent default
+        e.preventDefault();
+        e.stopPropagation();
+
+        // loading discount
+        this.loading('discount', true);
+
+        // set discount
+        await this.checkout.code(null);
+
+        // loading discount
+        this.loading('discount', false);
+      }
 
       onShippingCheck(e) {
         // check
@@ -580,6 +664,17 @@
 
         // return
         return dotProp.get(product.product.get(), `${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
+      }
+
+      /**
+       * get product field
+       */
+      getDiscount(key, d) {
+        // product field
+        const discountField = this.checkout.field('discount', key.split('.')[0]) || {};
+
+        // return
+        return dotProp.get(this.checkout.cart.get('discount').get(), `${discountField.name || discountField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
       }
 
       /**
