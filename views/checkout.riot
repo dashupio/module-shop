@@ -192,7 +192,7 @@
       </div>
       <!-- / DISCOUNT -->
 
-      <hr />
+      <hr if={ props.page.get('data.discount.model') } />
 
       <!-- SUB TOTAL -->
       <div class={ getClass('checkoutSubtotal', 'dashup-subtotal') }>

@@ -22,7 +22,7 @@
       <span class="input-group-text" if={ value.type === 'amount' }>
         $
       </span>
-      <input type="number" class="form-control" name={ props.getName(`${props.field.uuid}[value]`) } step="0.01" placeholder={ props.field.label }>
+      <input type="number" class="form-control" name={ props.getName(`${props.field.uuid}[value]`) } value={ value.value } step="0.01" placeholder={ props.field.label }>
       <span class="input-group-text" if={ value.type === 'percent' }>
         %
       </span>
