@@ -46,7 +46,7 @@
         <div class={ getClass('checkoutContact', 'dashup-contact') }>
           <label class={ getClass('checkoutContactTitle', 'text-large form-label') }>
             Contact
-            <a href="#!" class={ getClass('checkoutContactExtra', 'ml-auto') } if={ !(props.email || (auth && auth.exists())) } onclick={ (e) => toggleLogin() }>
+            <a href="#!" class={ getClass('checkoutContactExtra', 'ml-auto') } if={ !props.email && auth && auth.exists() } onclick={ (e) => toggleLogin() }>
               Login or Register
             </a>
           </label>
@@ -565,7 +565,7 @@
 
       onInformation() {
         // check information
-        const can = (this.checkout.get('data.order.billing') ? Object.keys(this.state.billing).length : true) && ((this.auth && this.auth.exists()) || this.props.email.length || this.state.email.length);
+        const can = (this.checkout.get('data.order.billing') ? Object.keys(this.state.billing).length : true) && ((this.auth && this.auth.exists()) || (this.props.email || '').length || this.state.email.length);
         
         // check can
         if (can) {
