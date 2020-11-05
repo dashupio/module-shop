@@ -30,7 +30,7 @@ export default class CheckoutPage extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-align-justify';
+    return 'fa fa-shopping-cart';
   }
 
   /**
@@ -71,7 +71,7 @@ export default class CheckoutPage extends Struct {
    */
   get categories() {
     // return array of categories
-    return ['frontend'];
+    return ['Shop'];
   }
 
   /**
@@ -79,6 +79,6 @@ export default class CheckoutPage extends Struct {
    */
   get description() {
     // return description string
-    return 'Page Descripton';
+    return 'E-commerce checkout page';
   }
 }
