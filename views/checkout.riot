@@ -139,7 +139,6 @@
     </div>
     
     <div class={ getClass('checkoutSidebar', 'dashup-checkout-cart col-5') }>
-
       <!-- CART -->
       <div each={ (product, i) in cart.get('products') } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
         <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.thumbs.0.2x-sq.url') }>
