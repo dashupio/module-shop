@@ -96,7 +96,7 @@ export default class OrderField extends Struct {
 
       page : page.get('data.discount.form'),
       form : page.get('data.discount.form'),
-    }, 'model').findById(value.discount) : null;
+    }, 'model').findById(value.discount.id ? value.discount.id : value.discount) : null;
 
     // discount page
     const discountPage = discount ? await new Query({
