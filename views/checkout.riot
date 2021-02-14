@@ -36,6 +36,10 @@
 
         <hr />
       </div>
+
+      <div if={ state.error } class={ getClass('checkoutAlert', 'dashup-checkout-alert alert alert-danger mb-4') }>
+        { state.error }
+      </div>
     
       <!-- STEPS -->
 
@@ -406,23 +410,33 @@
           information,
         });
 
+        // check error
+        if (!done._id) {
+          // create checkout
+          this.update({
+            error    : done.error,
+            checkout : false,
+          });
+
+          // on error
+          if (this.props.onError) this.props.onError(done);
+
+          // return
+          return;
+        }
+
         // create checkout
         this.update({
+          error    : null,
           checkout : false,
         });
 
-        // check done
-        if (done._id) {
-          // done
-          if (this.props.onSuccess) this.props.onSuccess(new this.dashup.Model(done, this.dashup));
+        // done
+        if (this.props.onSuccess) this.props.onSuccess(new this.dashup.Model(done, this.dashup));
 
-          // clear cart
-          this.checkout.cart.set(`products`, []);
-          this.checkout.emit('cart', this.checkout.cart);
-        } else {
-          // on error
-          if (this.props.onError) this.props.onerror(done);
-        }
+        // clear cart
+        this.checkout.cart.set(`products`, []);
+        this.checkout.emit('cart', this.checkout.cart);
       }
 
 
