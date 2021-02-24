@@ -222,6 +222,9 @@
       onBeforeMount() {
         // set initial value
         this.value = this.props.value || {};
+
+        // bind methods
+        this.onChange = this.onChange.bind(this);
       }
 
 
@@ -243,6 +246,7 @@
 
         // update
         this.update();
+        this.onChange();
       }
 
       /**
@@ -257,6 +261,7 @@
 
         // update
         this.update();
+        this.onChange();
       }
 
       /**
@@ -271,6 +276,7 @@
 
         // update
         this.update();
+        this.onChange();
       }
 
       /**
@@ -288,6 +294,18 @@
 
         // update
         this.update();
+        this.onChange();
+      }
+
+      /**
+       * on change
+       */
+      onChange() {
+        // check form
+        if (this.props.form) {
+          // update
+          this.props.dataAction(this.props.field, this.value);
+        }
       }
 
 
