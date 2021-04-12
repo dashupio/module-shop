@@ -1,7 +1,7 @@
 <order>
   <div class={ getClass('order', 'dashup-order row') }>
     
-    <div class={ getClass('orderMain', 'dashup-order-main col-7') }>
+    <div class={ getClass('orderMain', 'dashup-order-main col-lg-7 order-lg-0 order-1') }>
 
       <div class={ getClass('orderLogo', 'dashup-order-logo text-center') } if={ props.logo }>
         <img src={ props.logo } class={ getClass('orderLogoImg', 'w-25 margin-auto') } />
@@ -43,12 +43,12 @@
       </div>
     </div>
     
-    <div class={ getClass('orderSidebar', 'dashup-order-cart col-5') }>
+    <div class={ getClass('orderSidebar', 'dashup-order-cart col-lg-5 order-lg-1 order-0') }>
 
       <!-- CART -->
       <div if={ state.ready } each={ (product, i) in getOrder('field.products', []) } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.thumbs.0.2x-sq.url') }>
-          <img src={ getProduct(product, 'image.thumbs.0.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
+        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.0.thumbs.2x-sq.url') }>
+          <img src={ getProduct(product, 'image.0.thumbs.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
         </div>
         <div class={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
           <div class="w-100">
@@ -78,7 +78,7 @@
       <div class={ getClass('orderSubtotal', 'dashup-subtotal') } if={ state.ready }>
         <div each={ entry in Object.entries(checkout.totals(getOrder('field.products', []))) } class={ getClass('checkoutSubtotalLine', 'row mb-2') }>
           <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
-            { `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` }
+            { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
           </div>
           <div class={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
             <b>${ entry[1].toFixed(2) }</b>
@@ -201,17 +201,10 @@
         const billing = order.get(`${orderField.name || orderField.uuid}.information.address`);
 
         // shipping
-        if (billing && billing.first) {
+        if (billing && Object.keys(billing).length) {
           items.push({
             key   : 'Bill to',
-            value : `${billing.first || ''} ${billing.last || ''}`,
-          }, {
-            key   : '',
-            value : `
-              ${billing.street ? `${billing.street},` : ''}
-              ${billing.city ? `${billing.city}` : ''}
-              ${billing.postcode ? `${billing.postcode},` : ''}
-              ${billing.country ? `${billing.country}` : ''}`,
+            value : billing.formatted,
           });
         }
 
@@ -222,14 +215,7 @@
         if (shipping && Object.keys(shipping).length) {
           items.push({
             key   : 'Ship to',
-            value : `${shipping.first || ''} ${shipping.last || ''}`,
-          }, {
-            key   : '',
-            value : `
-              ${shipping.street ? `${shipping.street},` : ''}
-              ${shipping.city ? `${shipping.city}` : ''}
-              ${shipping.postcode ? `${shipping.postcode},` : ''}
-              ${shipping.country ? `${shipping.country}` : ''}`,
+            value : shipping.formatted,
           });
         }
 

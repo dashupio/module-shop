@@ -1,7 +1,7 @@
 <checkout>
   <div class={ getClass('checkout', 'dashup-checkout row') }>
     
-    <div class={ getClass('checkoutMain', 'dashup-checkout-main col-7') }>
+    <div class={ getClass('checkoutMain', 'dashup-checkout-main col-lg-7 order-1 order-lg-0') }>
 
       <div class={ getClass('checkoutLogo', 'dashup-checkout-logo text-center') } if={ props.logo }>
         <img src={ props.logo } class={ getClass('checkoutLogoImg', 'w-25 margin-auto') } />
@@ -50,7 +50,7 @@
         <div class={ getClass('checkoutContact', 'dashup-contact') }>
           <label class={ getClass('checkoutContactTitle', 'text-large form-label') }>
             Contact
-            <a href="#!" class={ getClass('checkoutContactExtra', 'ml-auto') } if={ !props.email && auth && auth.exists() } onclick={ (e) => toggleLogin() }>
+            <a href="#!" class={ getClass('checkoutContactExtra', 'ml-auto') } if={ !props.email && auth && !auth.exists() } onclick={ (e) => toggleLogin() }>
               Login or Register
             </a>
           </label>
@@ -63,25 +63,23 @@
         <hr />
 
         <!-- BILLING -->
-        <field-address if={ checkout.get('data.order.billing') } label="Billing Address" on-change={ (address) => onBillingAddress(address) } { ...props } />
+        <checkout-address label="Billing Address" on-change={ (address) => onBillingAddress(address) } { ...props } />
         <!-- / BILLING -->
-
-        <hr if={ checkout.get('data.order.billing') } />
       </div>
       <!-- / INFORMATION -->
 
       <!-- SHIPPING -->
-      <div if={ state.step === 'shipping' && checkout.get('data.order.shipping') }>
+      <div if={ state.step === 'shipping' && hasShipping() }>
         <div class="form-check mr-sm-2">
-          <input type="checkbox" class="form-check" id="shipping-is-billing" onchange={ (e) => onShippingCheck(e) } { ...getIsBilling() }>
+          <input type="checkbox" class="form-check-input" id="shipping-is-billing" onchange={ (e) => onShippingCheck(e) } { ...getIsBilling() }>
           <label class="form-check-label" for="shipping-is-billing">
-            Shipping Address same as Billing
+            Same as Billing
           </label>
         </div>
         
         <hr if={ !getIsBilling().checked } />
 
-        <field-address label="Shipping Address" if={ !getIsBilling().checked } on-change={ (address) => onShippingAddress(address) } { ...props } />
+        <checkout-address label="Shipping Address" if={ !getIsBilling().checked } on-change={ (address) => onShippingAddress(address) } { ...props } />
         
         <hr if={ !getIsBilling().checked && Object.keys(state.shipping).length } />
 
@@ -90,10 +88,7 @@
             Shipping to
           </div>
           <div class="card-body">
-            { getShipping().street ? `${getShipping().street},` : '' }
-            { getShipping().city ? `${getShipping().city}` : '' }
-            { getShipping().postcode ? `${getShipping().postcode},` : '' }
-            { getShipping().country ? `${getShipping().country}` : '' }
+            { getShipping().formatted }
           </div>
         </div>
       </div>
@@ -142,11 +137,11 @@
       <!-- / STEPS -->
     </div>
     
-    <div class={ getClass('checkoutSidebar', 'dashup-checkout-cart col-5') }>
+    <div class={ getClass('checkoutSidebar', 'dashup-checkout-cart col-lg-5 order-0 order-lg-1') }>
       <!-- CART -->
       <div each={ (product, i) in cart.get('products') } class={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.thumbs.0.2x-sq.url') }>
-          <img src={ getProduct(product, 'image.thumbs.0.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
+        <div class={ getClass('cartItemImage', 'col-4') } if={ getProduct(product, 'image.0.thumbs.2x-sq.url') }>
+          <img src={ getProduct(product, 'image.0.thumbs.2x-sq.url') } class={ getClass('cartItemImageImg', 'img-fluid') } />
         </div>
         <div class={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
           <div class="w-100">
@@ -201,7 +196,7 @@
       <div class={ getClass('checkoutSubtotal', 'dashup-subtotal') }>
         <div each={ entry in Object.entries(checkout.totals()) } class={ getClass('checkoutSubtotalLine', 'row mb-2') }>
           <div class={ getClass('checkoutSubtotalLabel', 'col-8') }>
-            { `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` }
+            { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
           </div>
           <div class={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
             <b>${ entry[1].toFixed(2) }</b>
@@ -250,6 +245,7 @@
     import dotProp from 'dot-prop';
 
     // checkout payment
+    import checkoutAddress from './checkout/address';
     import checkoutPayment from './checkout/payment';
 
 		// export default
@@ -268,6 +264,7 @@
       static get components() {
         // return components
         return {
+          checkoutAddress,
           checkoutPayment,
         };
       }
@@ -278,11 +275,12 @@
       onBeforeMount(props, state) {
         // initial state
         this.state = {
-          step    : 'information',
-          ready   : false,
-          source  : ((props.page.get('connects') || [])[0] || {}).uuid,
-          billing : {},
-          payment : {},
+          step     : 'information',
+          ready    : false,
+          source   : ((props.page.get('connects') || [])[0] || {}).uuid,
+          billing  : {},
+          payment  : {},
+          shipping : {},
         };
         this.enabled = {
           payment : false,
@@ -306,7 +304,7 @@
         this.checkout = props.page;
 
         // set steps
-        this.steps = this.checkout.get('data.order.shipping') ? ['Cart', 'Information', 'Shipping', 'Payment'] : ['Cart', 'Information', 'Payment'];
+        this.steps = this.hasShipping() ? ['Cart', 'Information', 'Shipping', 'Payment'] : ['Cart', 'Information', 'Payment'];
 
         // safe update
         this.safeUpdate = () => {
@@ -385,6 +383,7 @@
 
         // billing/shipping
         const information = {
+          user    : this.auth && this.auth.exists() ? this.auth.user.get('_id') : null,
           email   : this.props.email || this.state.email || (this.auth && this.auth.exists() ? this.auth.user.get(this.checkout.field('auth', 'email').name || this.checkout.field('auth', 'email').uuid) : ''),
           address : this.state.billing,
         };
@@ -403,6 +402,7 @@
           page   : this.checkout.get('_id'),
           dashup : this.dashup.get('_id'),
         }, 'checkout.complete', {
+          user : this.auth && this.auth.exists() ? this.auth.user.get('_id') : null,
           payment,
           products,
           discount,
@@ -602,6 +602,20 @@
         return can;
       }
 
+      /**
+       * has shipping
+       */
+      hasShipping() {
+        // get products
+        const products = this.checkout.cart.get('products');
+
+        // field
+        const productField = this.checkout.field('product', 'field');
+
+        // return has shipping
+        return !!productField.shipping;
+      }
+
       onShipping() {
         // return shipping
         const can = (this.checkout.get('data.order.shipping.uuid') ? (this.state.shipping === 'billing' || Object.keys(this.state.shipping).length) : true);
@@ -616,11 +630,7 @@
           items.push({
             key : 'Ship to',
             step : 'shipping',
-            value : `
-              ${shipping.street ? `${shipping.street},` : ''}
-              ${shipping.city ? `${shipping.city}` : ''}
-              ${shipping.postcode ? `${shipping.postcode},` : ''}
-              ${shipping.country ? `${shipping.country}` : ''}`,
+            value : shipping.formatted,
           });
 
           // update items
@@ -676,7 +686,7 @@
         const productField = this.checkout.field('product', key.split('.')[0]) || {};
 
         // return
-        return dotProp.get(product.product.get(), `${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
+        return product.product.get(`${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
       }
 
       /**
@@ -687,7 +697,7 @@
         const discountField = this.checkout.field('discount', key.split('.')[0]) || {};
 
         // return
-        return dotProp.get(this.checkout.cart.get('discount').get(), `${discountField.name || discountField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
+        return this.checkout.cart.get('discount').get(`${discountField.name || discountField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
       }
 
       /**

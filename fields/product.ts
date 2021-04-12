@@ -6,6 +6,18 @@ import { Struct } from '@dashup/module';
  * build address helper
  */
 export default class ProductField extends Struct {
+  /**
+   * construct stripe connector
+   *
+   * @param args 
+   */
+  constructor(...args) {
+    // run super
+    super(...args);
+
+    // bind methods
+    this.submitAction = this.submitAction.bind(this);
+  }
 
   /**
    * returns object of views
@@ -13,8 +25,31 @@ export default class ProductField extends Struct {
   get views() {
     // return object of views
     return {
-      input   : 'field/product/input',
-      display : 'field/product/display',
+      input    : 'field/product/input',
+      display  : 'field/product/display',
+      validate : 'field/product/validate',
+    };
+  }
+
+  /**
+   * gets data
+   */
+  get data() {
+    // return data
+    return {
+      tabs : ['Display', 'Validate'],
+      subs : [
+        {
+          key   : 'type',
+          type  : 'text',
+          title : 'Type',
+        },
+        {
+          key   : 'price',
+          type  : 'money',
+          title : 'Price',
+        },
+      ],
     };
   }
   
@@ -35,6 +70,16 @@ export default class ProductField extends Struct {
   }
 
   /**
+   * returns connect actions
+   */
+  get actions() {
+    // return connect actions
+    return {
+      submit : this.submitAction,
+    };
+  }
+
+  /**
    * returns category list to show field in
    */
   get categories() {
@@ -48,5 +93,22 @@ export default class ProductField extends Struct {
   get description() {
     // return description string
     return 'Product Field';
+  }
+  /**
+   * returns sanitised result of field submission
+   *
+   * @param {*} param0 
+   * @param {*} field 
+   * @param {*} value 
+   */
+  async submitAction(opts, field, value) {
+    // check value
+    if (!value) value = {};
+
+    // check price
+    if (value.price) value.price = parseFloat(value.price);
+
+    // return value
+    return { value };
   }
 }

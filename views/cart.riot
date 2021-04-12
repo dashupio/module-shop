@@ -13,7 +13,7 @@
         </p>
 
         <div class={ getClass('cartItemCart', 'dashup-item-qty row') }>
-          <div class={ getClass('cartItemQty', 'col-7') }>
+          <div class={ getClass('cartItemQty', 'col-7') } if={ !props.disableAmount }>
             
             <div class="input-group">
               <div class="input-group-prepend">
@@ -121,34 +121,66 @@
 
       getProducts() {
         // get products
-        const products = this.props.page && this.props.page.cart ? this.props.page.cart.get('products') : {};
+        return this.props.page && this.props.page.cart ? this.props.page.cart.get('products') : [];
+      },
 
-        // return products
-        return Object.values(products);
+      getField(name, tld = 'product') {
+        // return field
+        return this.props.page.field(tld, name);
       },
 
       getTitle(product) {
-        // return title
-        return dotProp.get(product, `product.${this.props.page.get('data.product.title.name') || this.props.page.get('data.product.title.uuid') || 'title'}`);
+        // field
+        const field = this.getField('title');
+
+        // check field
+        if (!field) return;
+
+        // get product
+        const title = product.product.get(field.name || field.uuid);
+
+        // title
+        if (this.props.getTitle) return this.props.getTitle(product, title);
+
+        // title
+        return title;
       },
 
       getImage(product) {
-        // return title
-        let img = dotProp.get(product, `product.${this.props.page.get('data.product.image.name') || this.props.page.get('data.product.image.uuid') || 'image'}`);
+        // field
+        const field = this.getField('image');
 
-        // no image
-        if (!img) return;
+        // check field
+        if (!field) return;
+
+        // images
+        let images = product.product.get(field.name || field.uuid);
+
+        // check
+        if (!images) return;
 
         // check image
-        if (!Array.isArray(img)) img = [img];
+        if (!Array.isArray(images)) images = [images];
+
+        // title
+        if (this.props.getImage) return this.props.getImage(product, images);
         
         // return url
-        return (((img[0] || {}).thumbs || {})['2x-sq'] || {}).url;
+        return (((images[0] || {}).thumbs || {})['2x-sq'] || {}).url;
       },
 
       getPrice(product) {
-        // return title
-        const prod = dotProp.get(product, `product.${this.props.page.get('data.product.field.name') || this.props.page.get('data.product.field.uuid')}`);
+        // field
+        const field = this.getField('field');
+
+        // check field
+        if (!field) return 0;
+
+        // get product
+        const prod = product.product.get(field.name || field.uuid);
+
+        // title
+        if (this.props.getPrice) return this.props.getPrice(product, prod);
 
         // return price
         return (prod || {}).price || 0;

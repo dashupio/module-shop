@@ -23,12 +23,19 @@
       </label>
       <eden-select on-change={ (e, val) => onOrderForm(val) } ref={ ref('orderForm') } placeholder="Select Form" data={ getOrderForm() } />
     </div>
-
-    <div class="mb-3" if={ props.page.get('data.order.form') } each={ (field, i) in orderFields }>
-      <label class="form-label">
-        Order { field.name }
-      </label>
-      <eden-select on-change={ (e, val) => onField('order', field.name.split(' ')[0].toLowerCase(), val) } ref={ ref(`order-${field.name.split(' ')[0].toLowerCase()}`) } placeholder="Select Field" data={ getField('order', field.name.split(' ')[0].toLowerCase(), field.type) } />
+    
+    <div class="card border bg-white" if={ props.page.get('data.order.form') }>
+      <div class="card-header">
+        Order Fields
+      </div>
+      <div class="card-body">
+        <div class="mb-3" each={ (field, i) in orderFields }>
+          <label class="form-label">
+            Order { field.name }
+          </label>
+          <eden-select on-change={ (e, val) => onField('order', field.name.split(' ')[0].toLowerCase(), val) } ref={ ref(`order-${field.name.split(' ')[0].toLowerCase()}`) } placeholder="Select Field" data={ getField('order', field.name.split(' ')[0].toLowerCase(), field.type) } />
+        </div>
+      </div>
     </div>
 
     <hr />
@@ -117,8 +124,26 @@
 
         // order fields
         this.orderFields = [{
+          name : 'Email',
+          type : 'email',
+        }, {
+          name : 'Address',
+          type : 'address',
+        }, {
           name : 'Field',
           type : 'order',
+        }, {
+          name : 'Total',
+          type : 'money',
+        }, {
+          name : 'Products',
+          type : 'model',
+        }, {
+          name : 'User',
+          type : 'model',
+        }, {
+          name : 'Discount',
+          type : 'money',
         }];
 
         // order fields

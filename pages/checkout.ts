@@ -57,6 +57,7 @@ export default class CheckoutPage extends Struct {
   get views() {
     // return object of views
     return {
+      cart     : 'cart',
       order    : 'order',
       checkout : 'checkout',
 

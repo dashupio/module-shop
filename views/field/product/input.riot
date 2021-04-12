@@ -1,7 +1,7 @@
 <field-product-input>
   <div>
-    <div class="card mb-3 border bg-transparent">
-      <div class="card-header border-bottom">
+    <div class="card mb-3">
+      <div class="card-header">
         { props.field.label }
         <a if={ !props.field.label } href="#!" onclick={ (e) => props.updateAction(e, props.field) }>
           <i>Set Label</i>
@@ -33,13 +33,13 @@
           </div>
         </div>
 
-        <div class="card border bg-transparent" if={ value.type === 'variable' }>
-          <div class="card-header border-bottom">
+        <div class="card" if={ value.type === 'variable' }>
+          <div class="card-header">
             <label class="m-0">
               { props.field.label } Variations
             </label>
           </div>
-          <div each={ (variation, i) in value.variations } class="card-body border-bottom">
+          <div each={ (variation, i) in value.variations } class="card-body">
             <div class="mb-3">
               <validate type="number" data-value={ variation.price || '0' } label={ `Variation Price` } name={ getName('price', i) }>
                 <span slot="prepend" class="input-group-text">
@@ -82,6 +82,22 @@
         </div>
         
       </div>
+
+      <!-- SHIPPING -->
+      <div class="card-header">
+        { props.field.label } Shipping
+        <a if={ !props.field.label } href="#!" onclick={ (e) => props.updateAction(e, props.field) }>
+          <i>Set Label</i>
+        </a>
+      </div>
+      <div class="card-body">
+        <validate type="number" data-value={ value.shipping || '0' } name={ props.getName(`${props.field.uuid}[shipping]`) } label={ `${ props.field.label || '' } Shipping Price` }>
+          <span slot="prepend" class="input-group-text">
+            $
+          </span>
+        </validate>
+      </div>
+      <!-- / SHIPPING -->
     </div>
   </div>
   
