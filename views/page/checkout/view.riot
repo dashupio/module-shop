@@ -47,7 +47,9 @@
 
         // listeners
         this.props.page.on('reload', this.safeUpdate);
+        this.props.page.on('data.model', this.safeUpdate);
         this.props.page.on('data.order', this.safeUpdate);
+        this.props.page.on('data.discount', this.safeUpdate);
       }
 
       /**
@@ -60,6 +62,8 @@
         // listeners
         this.props.page.removeListener('reload', this.safeUpdate);
         this.props.page.removeListener('data.order', this.safeUpdate);
+        this.props.page.removeListener('data.product', this.safeUpdate);
+        this.props.page.removeListener('data.discount', this.safeUpdate);
       }
 
       /**

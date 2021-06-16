@@ -303,7 +303,7 @@
         if (!field) return 0;
 
         // image
-        return dotProp.get(product.product, `${field.name || field.uuid}.price`) || 0;
+        return parseFloat(dotProp.get(product.product, `${field.name || field.uuid}.price`) || 0);
       }
 
       /**
