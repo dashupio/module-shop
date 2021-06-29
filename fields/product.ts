@@ -25,9 +25,8 @@ export default class ProductField extends Struct {
   get views() {
     // return object of views
     return {
-      input    : 'field/product/input',
-      display  : 'field/product/display',
-      validate : 'field/product/validate',
+      view  : 'field/product/view',
+      input : 'field/product',
     };
   }
 

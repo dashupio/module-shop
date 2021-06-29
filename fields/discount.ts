@@ -13,8 +13,8 @@ export default class DiscountField extends Struct {
   get views() {
     // return object of views
     return {
-      input   : 'field/discount/input',
-      display : 'field/discount/display',
+      view  : 'field/discount/view',
+      input : 'field/discount',
     };
   }
   

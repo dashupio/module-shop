@@ -26,8 +26,8 @@ export default class OrderField extends Struct {
   get views() {
     // return object of views
     return {
-      input   : 'field/order/input',
-      display : 'field/order/display',
+      view  : 'field/order/view',
+      input : 'field/order',
     };
   }
   

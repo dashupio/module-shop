@@ -57,7 +57,7 @@ export default class CheckoutPage extends Struct {
   get data() {
     // return page data
     return {
-      tabs    : ['Product', 'Order', 'Discount', 'Connects'],
+      tabs    : ['Product', 'Orders', 'Discount', 'Connects'],
       default : {
         title : 'The Checkout page requires a couple models in order for data to be submitted to it, do you want us to create those pages page?',
         check : [
@@ -263,12 +263,12 @@ export default class CheckoutPage extends Struct {
   get views() {
     // return object of views
     return {
-      //cart     : 'cart',
-      //order    : 'order',
-      //checkout : 'checkout',
+      cart     : 'cart',
+      order    : 'order',
+      checkout : 'checkout',
 
       view     : 'page/checkout',
-      order    : 'page/checkout/order',
+      orders   : 'page/checkout/orders',
       product  : 'page/checkout/product',
       discount : 'page/checkout/discount',
     };

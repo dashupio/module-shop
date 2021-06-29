@@ -6,7 +6,7 @@ import React from 'react';
 import Config from './config';
 
 // create page model config
-const PageCheckoutOrder = (props = {}) => {
+const PageCheckoutOrders = (props = {}) => {
   // return jsx
   return (
     <Config { ...props } tab="order" />
@@ -14,4 +14,4 @@ const PageCheckoutOrder = (props = {}) => {
 };
 
 // export default
-export default PageCheckoutOrder;
+export default PageCheckoutOrders;
