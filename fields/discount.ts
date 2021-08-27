@@ -19,6 +19,14 @@ export default class DiscountField extends Struct {
   }
   
   /**
+   * returns field icon
+   */
+  get icon() {
+    // return field type label
+    return 'fad fa-percentage';
+  }
+  
+  /**
    * returns field type
    */
   get type() {
@@ -56,6 +64,6 @@ export default class DiscountField extends Struct {
    */
   get description() {
     // return description string
-    return 'Discount Field';
+    return 'Product Discount Field';
   }
 }

@@ -9,13 +9,13 @@ const ShopCart = (props = {}) => {
   // on remove
   const onRemove = (product) => {
     // do in cart
-    props.page.remove(product.product);
+    props.page.remove(product.product, product.opts);
   };
 
   // on count
   const onCount = (product, count) => {
     // do in cart
-    props.page.add(product.product, parseInt(count));
+    props.page.add(product.product, parseInt(count), product.opts);
   };
 
   // on add
@@ -111,7 +111,7 @@ const ShopCart = (props = {}) => {
     if (props.getPrice) return props.getPrice(product, prod);
 
     // return price
-    return (prod || {}).price || 0;
+    return parseFloat((prod || {}).price || 0);
   };
 
   // use effect
@@ -148,37 +148,40 @@ const ShopCart = (props = {}) => {
               </div>
             ) }
             <div className={ getClass('cartItemInfo', 'col') }>
-              <h2 className={ getClass('cartItemTitle', 'dashup-item-title') }>
-                { getTitle(product) }
-              </h2>
-              <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
-                ${ getPrice(product).toFixed(2) }
-              </p>
+              <div className="w-100">
+                <h2 className={ `${getClass('cartItemTitle', 'dashup-item-title')}${product?.opts?.title ? ' mb-0' : ''}` }>
+                  { getTitle(product) }
+                </h2>
+                { !!product?.opts?.title && (
+                  <p className={ getClass('cartItemTitle', 'dashup-item-variation') }>
+                    <small>{ product.opts.title }</small>
+                  </p>
+                ) }
+                <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
+                  ${ getPrice(product).toFixed(2) }
+                </p>
 
-              <div className={ getClass('cartItemCart', 'dashup-item-qty row') }>
-                { !props.disableAmount && (
-                  <div className={ getClass('cartItemQty', 'col-7') }>
-                    
-                    <div className="input-group">
-                      <div className="input-group-prepend">
-                        <button className="btn btn-outline-dark" type="button" onClick={ (e) => onAdd(product) }>
+                <div className={ getClass('cartItemCart', 'dashup-item-qty row') }>
+                  { !props.disableAmount && (
+                    <div className={ getClass('cartItemQty', 'col-7') }>
+                      
+                      <div className="input-group">
+                        <button className={ getClass('cartItemQtyBtn', 'btn btn-outline-dark') } type="button" onClick={ (e) => onSubtract(product) }>
+                          -
+                        </button>
+                        <input type="number" className={ getClass('cartItemQtyInput', 'form-control text-center') } value={ product.count } onChange={ (e) => onCount(product, e.target.value) } />
+                        <button className={ getClass('cartItemQtyBtn', 'btn btn-outline-dark') } type="button" onClick={ (e) => onAdd(product) }>
                           +
                         </button>
                       </div>
-                      <input type="number" className="form-control text-center" value={ product.count } onChange={ (e) => onCount(product, e.target.value) } />
-                      <div className="input-group-append">
-                        <button className="btn btn-outline-dark" type="button" onClick={ (e) => onSubtract(product) }>
-                          -
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                ) }
+                  ) }
 
-                <div className={ getClass('cartItemRemove', 'col-5') }>
-                  <button className={ getClass('cartItemRemoveBtn', 'btn btn-block btn-outline-dark') } type="button" onClick={ (e) => onRemove(product) }>
-                    Remove
-                  </button>
+                  <div className={ getClass('cartItemRemove', 'col-5') }>
+                    <button className={ getClass('cartItemRemoveBtn', 'btn btn-block btn-outline-dark') } type="button" onClick={ (e) => onRemove(product) }>
+                      Remove
+                    </button>
+                  </div>
                 </div>
 
               </div>

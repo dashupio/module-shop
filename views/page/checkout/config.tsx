@@ -151,9 +151,9 @@ const PageCheckoutConfig = (props = {}) => {
           <label className="form-label">
             { label } Form
           </label>
-          <Select options={ getForms(type) } defaultValue={ getForms(type).filter((f) => f.selected) } onChange={ (val) => props.setData(`${type}.form`, val?.value) } isMulti />
+          <Select options={ getForms(type) } defaultValue={ getForms(type).filter((f) => f.selected) } onChange={ (val) => props.setData(`${type}.form`, val?.value) } isClearable />
           <small>
-            The forms that this grid will filter by.
+            Used for checkout { label }s.
           </small>
         </div>
       ) }
@@ -168,7 +168,7 @@ const PageCheckoutConfig = (props = {}) => {
                 <label className="form-label">
                   { field.name } Field
                 </label>
-                <Select options={ getField(type, `${field.name || ''}`.toLowerCase(), field.type) } defaultValue={ getField(type, `${field.name || ''}`.toLowerCase(), field.type).filter((f) => f.selected) } onChange={ (value) => onField(type, 'group', value?.value) } isClearable />
+                <Select options={ getField(type, `${field.name || ''}`.toLowerCase(), field.type) } defaultValue={ getField(type, `${field.name || ''}`.toLowerCase(), field.type).filter((f) => f.selected) } onChange={ (value) => onField(type, `${field.name || ''}`.toLowerCase(), value?.value) } isClearable />
               </div>
             );
           }) }

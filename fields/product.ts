@@ -29,6 +29,14 @@ export default class ProductField extends Struct {
       input : 'field/product',
     };
   }
+  
+  /**
+   * returns field icon
+   */
+  get icon() {
+    // return field type label
+    return 'fad fa-shopping-cart';
+  }
 
   /**
    * gets data
@@ -91,7 +99,7 @@ export default class ProductField extends Struct {
    */
   get description() {
     // return description string
-    return 'Product Field';
+    return 'Shop Product Field';
   }
   /**
    * returns sanitised result of field submission

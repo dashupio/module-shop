@@ -86,7 +86,7 @@ const FieldOrder = (props = {}) => {
                       </p>
                       <p className="dashup-item-price">
                         <b>
-                          ${ (getProduct(product, 'field.price') * product.count).toFixed(2) }
+                          ${ (parseFloat(getProduct(product, 'field.price') || 0) * product.count).toFixed(2) }
                         </b>
                         { getProduct(product, 'field.type') === 'subscription' && (
                           <small className="dashup-item-period ms-2">

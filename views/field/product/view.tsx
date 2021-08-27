@@ -18,7 +18,7 @@ const FieldProductView = (props = {}) => {
   // return text field
   return (
     <div>
-      { types[value.type] } ${ (value.price || 0).toFixed(2) }
+      { types[value.type] } ${ parseFloat(value.price || 0).toFixed(2) }
     </div>
   );
 };

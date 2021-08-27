@@ -30,7 +30,7 @@ export default class CheckoutPage extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-shopping-cart';
+    return 'fad fa-shopping-cart text-primary';
   }
 
   /**
@@ -38,7 +38,7 @@ export default class CheckoutPage extends Struct {
    */
   get title() {
     // return page type label
-    return 'Checkout Page';
+    return 'Checkout';
   }
 
   /**
@@ -57,7 +57,7 @@ export default class CheckoutPage extends Struct {
   get data() {
     // return page data
     return {
-      tabs    : ['Product', 'Orders', 'Discount', 'Connects'],
+      tabs    : ['Product', 'Orders', 'Auth', 'Discount', 'Connects'],
       default : {
         title : 'The Checkout page requires a couple models in order for data to be submitted to it, do you want us to create those pages page?',
         check : [
@@ -75,7 +75,7 @@ export default class CheckoutPage extends Struct {
             _id  : 'createProduct',
             type : 'form',
             icon : 'plus fas',
-            name : `Create Products`,
+            name : 'Create',
             data : {
               model  : '{{ product }}',
               fields : [
@@ -134,7 +134,7 @@ export default class CheckoutPage extends Struct {
             _id  : 'createOrder',
             type : 'form',
             icon : 'plus fas',
-            name : `Create Products`,
+            name : 'Create',
             data : {
               model  : '{{ order }}',
               fields : [
@@ -196,7 +196,7 @@ export default class CheckoutPage extends Struct {
             _id  : 'createDiscount',
             type : 'form',
             icon : 'plus fas',
-            name : `Create Products`,
+            name : 'Create',
             data : {
               model  : '{{ discount }}',
               fields : [
@@ -268,6 +268,7 @@ export default class CheckoutPage extends Struct {
       checkout : 'checkout',
 
       view     : 'page/checkout',
+      auth     : 'page/checkout/auth',
       orders   : 'page/checkout/orders',
       product  : 'page/checkout/product',
       discount : 'page/checkout/discount',
@@ -287,6 +288,6 @@ export default class CheckoutPage extends Struct {
    */
   get description() {
     // return description string
-    return 'E-commerce checkout page';
+    return 'Embeddable E-commerce checkout system';
   }
 }

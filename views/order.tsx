@@ -55,10 +55,7 @@ const ShopOrder = (props = {}) => {
 
     // total
     if (!total) total = page.total(getOrder('field.products', []));
-
-    console.log('test', total);
-    console.log('test 2', discount);
-
+    
     // parse
     total = parseFloat(total);
 
@@ -196,17 +193,22 @@ const ShopOrder = (props = {}) => {
               ) }
               <div className={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
                 <div className="w-100">
-                  <p className={ getClass('cartItemTitle', 'dashup-item-title') }>
+                  <h2 className={ `${getClass('cartItemTitle', 'dashup-item-title')}${product?.opts?.title ? ' m-0' : ''}` }>
                     <small>
                       { product.count.toLocaleString() }
-                      <i className={ getClass('cartItemPriceSep', 'fal fa-times mx-1') } />
+                      <i className={ getClass('cartItemPriceSep', 'fal fa-fw fa-times mx-1') } />
                     </small>
                     <b>{ getProduct(product, 'title') }</b>
-                  </p>
+                  </h2>
+                  { !!product?.opts?.title && (
+                    <p className={ getClass('cartItemTitle', 'dashup-item-variation') }>
+                      <small>{ product.opts.title }</small>
+                    </p>
+                  ) }
                   <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
-                    <b>
-                      ${ (getProduct(product, 'field.price') * product.count).toFixed(2) }
-                    </b>
+                    <span>
+                      ${ (parseFloat(getProduct(product, 'field.price') || 0) * product.count).toFixed(2) }
+                    </span>
                     { getProduct(product, 'field.type') === 'subscription' && (
                       <small className={ getClass('cartItemPeriod', 'dashup-item-period ms-2') }>
                         { getProduct(product, 'field.period') || 'Monthly' }
@@ -230,8 +232,8 @@ const ShopOrder = (props = {}) => {
                   <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                     { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
                   </div>
-                  <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
-                    <b>${ entry[1].toFixed(2) }</b>
+                  <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
+                    <b>${ parseFloat(entry[1] || 0).toFixed(2) }</b>
                   </div>
                 </div>
               );
@@ -241,7 +243,7 @@ const ShopOrder = (props = {}) => {
                 <div className={ getClass('orderSubtotalLabel', 'col-8') }>
                   Discount
                 </div>
-                <div className={ getClass('orderSubtotalAmount', 'col-4 text-right')}>
+                <div className={ getClass('orderSubtotalAmount', 'col-4 text-end')}>
                   <b>${ getDiscount().toFixed(2) }</b>
                 </div>
               </div>
@@ -251,7 +253,7 @@ const ShopOrder = (props = {}) => {
                 <div className={ getClass('orderSubtotalLabel', 'col-8') }>
                   Shipping
                 </div>
-                <div className={ getClass('orderSubtotalAmount', 'col-4 text-right')}>
+                <div className={ getClass('orderSubtotalAmount', 'col-4 text-end')}>
                   { page.shipping() ? (
                     <b>${ page.shipping().toFixed(2) }</b>
                   ) : (
@@ -270,7 +272,7 @@ const ShopOrder = (props = {}) => {
             <div className={ getClass('orderTotalLabel', 'col-8 d-flex align-items-center') }>
               Total
             </div>
-            <div className={ getClass('orderTotalAmount', 'col-4 text-right h4')}>
+            <div className={ getClass('orderTotalAmount', 'col-4 text-end')}>
               ${ ((page.total(getOrder('field.products', [])) + getShipping()) - getDiscount()).toFixed(2) }
             </div>
           </div>

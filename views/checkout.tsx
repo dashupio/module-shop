@@ -8,16 +8,21 @@ const ShopCheckout = (props = {}) => {
   const { page, dashup } = props;
 
   // set dashup
-  const auth = page.get('data.auth') ? dashup.page(page.get('data.auth')) : null;
+  const auth = page.get('data.auth') ? dashup.page(page.get('data.auth')) : props.auth;
   const cart = page.cart;
+
+  // form
+  const authForm = auth && dashup.page(auth.get('data.form'));
+
+  // emailField
+  const emailField = authForm && (authForm.get('data.fields') || []).find((f) => f.uuid === auth.get('data.field.email'));
 
   // state
   const [step, setStep] = useState('information');
-  const [items, setItems] = useState([]);
   const [error, setError] = useState(null);
   const [login, setLogin] = useState(false);
   const [email, setEmail] = useState(
-    props.email || (auth && auth.exists() ? auth.user.get(page.field('auth', 'email').name || page.field('auth', 'email').uuid) : '')
+    props.email || (auth?.exists() && emailField ? auth.user.get(emailField.name || emailField.uuid) : '')
   );
   const [payment, setPayment] = useState(false);
   const [loading, setLoading] = useState(null);
@@ -123,7 +128,7 @@ const ShopCheckout = (props = {}) => {
       page   : page.get('_id'),
       dashup : dashup.get('_id'),
     }, 'checkout.complete', {
-      user : auth && auth.exists() ? auth.user.get('_id') : null,
+      user : auth?.exists() ? auth.user.get('_id') : null,
       payment,
       products,
       discount : page.cart.get('discount') ? page.cart.get('discount').get('_id') : null,
@@ -131,7 +136,7 @@ const ShopCheckout = (props = {}) => {
         address : isBilling ? billing : shipping,
       },
       information : {
-        user : auth && auth.exists() ? auth.user.get('_id') : null,
+        user : auth?.exists() ? auth.user.get('_id') : null,
         email,
         address : billing,
       },
@@ -434,24 +439,24 @@ const ShopCheckout = (props = {}) => {
         <div className={ getClass('checkoutComplete', 'dashup-checkout-complete row') }>
           <div className={ getClass('checkoutCompleteBack', 'col-6') }>
             { steps.map(s => s.toLowerCase()).indexOf(step) > 1 && (
-              <button className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0 btn-lg') } onClick={ (e) => onBack(e) }>
+              <button className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0') } onClick={ (e) => onBack(e) }>
                 Back
               </button>
             ) }
             { !!props.back && steps.map(s => s.toLowerCase()).indexOf(step) === 1 && (
-              <a href={ props.back } className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0 btn-lg') }>
+              <a href={ props.back } className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0') }>
                 Back
               </a>
             ) }
           </div>
           <div className={ getClass('checkoutCompleteBtnWrap', 'col-6 text-end') }>
             { step !== 'payment' ? (
-              <button className={ getClass('checkoutCompleteBtn', 'btn btn-primary btn-lg') } onClick={ (e) => onContinue(e) }>
+              <button className={ getClass('checkoutCompleteBtn', 'btn btn-primary') } onClick={ (e) => onContinue(e) }>
                 Continue
               </button>
 
             ) : (
-              <button className={ `${getClass('checkoutCompleteBtn', 'btn btn-success btn-lg')} ${!!payment && !completing ? '' : 'disabled'}` } onClick={ (e) => onComplete(e) }>
+              <button className={ `${getClass('checkoutCompleteBtn', 'btn btn-success')} ${!!payment && !completing ? '' : 'disabled'}` } onClick={ (e) => onComplete(e) }>
                 { completing ? 'Completing...' : 'Complete Order' }
               </button>
             ) }
@@ -475,17 +480,22 @@ const ShopCheckout = (props = {}) => {
               ) }
               <div className={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
                 <div className="w-100">
-                  <p className={ getClass('cartItemTitle', 'dashup-item-title') }>
+                  <h2 className={ `${getClass('cartItemTitle', 'dashup-item-title')}${product?.opts?.title ? ' mb-0' : ''}` }>
                     <small>
                       { product.count.toLocaleString() }
-                      <i className={ getClass('cartItemPriceSep', 'fal fa-times mx-1') } />
+                      <i className={ getClass('cartItemPriceSep', 'fal fa-fw fa-times mx-1') } />
                     </small>
                     <b>{ getProduct(product, 'title') }</b>
-                  </p>
+                  </h2>
+                  { !!product?.opts?.title && (
+                    <p className={ getClass('cartItemTitle', 'dashup-item-variation') }>
+                      <small>{ product.opts.title }</small>
+                    </p>
+                  ) }
                   <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
-                    <b>
-                      ${ (getProduct(product, 'field.price') * product.count).toFixed(2) }
-                    </b>
+                    <span>
+                      ${ (parseFloat(getProduct(product, 'field.price') || 0) * product.count).toFixed(2) }
+                    </span>
                     { getProduct(product, 'field.type') === 'subscription' && (
                       <small className={ getClass('cartItemPeriod', 'dashup-item-period ms-2') }>
                         { getProduct(product, 'field.period') || 'Monthly' }
@@ -518,7 +528,7 @@ const ShopCheckout = (props = {}) => {
             <b className="me-2">
               { getDiscount('code') }
             </b>
-            { getDiscount('discount.type', 'amount') === 'amount' ? '$' : '' }{ parseFloat(getDiscount('discount.value')).toFixed(2) }{ getDiscount('discount.type', 'amount') === 'amount' ? '' : '%' }
+            { getDiscount('discount.type', 'amount') === 'amount' ? '$' : '' }{ parseFloat(getDiscount('discount.value') || 0).toFixed(2) }{ getDiscount('discount.type', 'amount') === 'amount' ? '' : '%' }
             Off
             <button className={ `btn btn-sm btn-secondary ms-auto${loading === 'discount' ? ' disabled' : ''}` } onClick={ (e) => onRemoveDiscount(e) }>
               <i className={ loading === 'discount' ? 'fa fa-spinner fa-spin' : 'fa fa-times' } />
@@ -539,8 +549,8 @@ const ShopCheckout = (props = {}) => {
                 <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                   { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
                 </div>
-                <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
-                  <b>${ entry[1].toFixed(2) }</b>
+                <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
+                  <b>${ parseFloat(entry[1] || 0).toFixed(2) }</b>
                 </div>
               </div>
             );
@@ -550,7 +560,7 @@ const ShopCheckout = (props = {}) => {
               <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                 Discount
               </div>
-              <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
+              <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
                 <b>${ page.discount().toFixed(2) }</b>
               </div>
             </div>
@@ -560,7 +570,7 @@ const ShopCheckout = (props = {}) => {
               <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                 Shipping
               </div>
-              <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-right')}>
+              <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
                 { page.shipping() ? (
                   <b>${ page.shipping().toFixed(2) }</b>
                 ) : (
@@ -579,7 +589,7 @@ const ShopCheckout = (props = {}) => {
             <div className={ getClass('checkoutTotalLabel', 'col-8 d-flex align-items-center') }>
               Total
             </div>
-            <div className={ getClass('checkoutTotalAmount', 'col-4 text-right h4')}>
+            <div className={ getClass('checkoutTotalAmount', 'col-4 text-end')}>
               ${ ((page.total() + page.shipping()) - page.discount(page.total())).toFixed(2) }
             </div>
           </div>

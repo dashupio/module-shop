@@ -32,6 +32,14 @@ export default class OrderField extends Struct {
   }
   
   /**
+   * returns field icon
+   */
+  get icon() {
+    // return field type label
+    return 'fad fa-box-full';
+  }
+  
+  /**
    * returns field type
    */
   get type() {
@@ -71,7 +79,7 @@ export default class OrderField extends Struct {
    */
   get description() {
     // return description string
-    return 'Order Field';
+    return 'Shop Order Field';
   }
 
   /**
@@ -133,11 +141,14 @@ export default class OrderField extends Struct {
   async sanitiseAction(opts, field, value) {
     // get value
     if (!value || !value.checkout) return { sanitised : value };
-
+    
     // get checkout
     const page = await new Query({
       ...opts,
     }, 'page').findById(value.checkout);
+
+    // check page
+    if (!page) return { sanitised : value }
     
     // loop products
     const products = await new Query({
@@ -151,7 +162,10 @@ export default class OrderField extends Struct {
 
       // return product
       return id;
-    }));
+    })) || [];
+
+    // check products length
+    if (!products.length) return { sanitised : value };
 
     // loop products
     value.products = await Promise.all(value.products.map(async (product) => {

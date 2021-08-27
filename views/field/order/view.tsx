@@ -33,7 +33,7 @@ const FieldOrderView = (props = {}) => {
         return (
           <span key={ `payment-${i}` } className={ `me-2 btn btn-sm btn-${['succeeded', 'active'].includes(payment.status) ? 'success' : 'danger'}` }>
             <i className={ `fab fa-${payment.type} me-2` } />
-            ${ parseFloat(((payment.amount || [])[0] || 0) - ((payment.discount || [])[0] || 0)).toFixed(2) } { (payment.amount || [])[1] } { (payment.amount || [])[2] }
+            ${ parseFloat(((payment.amount || [])[0] || 0) - parseFloat((payment.discount || [])[0] || 0)).toFixed(2) } { (payment.amount || [])[1] } { (payment.amount || [])[2] }
           </span>
         );
       }) }

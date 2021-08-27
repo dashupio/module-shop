@@ -89,7 +89,7 @@ const FieldProduct = (props = {}) => {
                   page={ props.page }
                   value={ props.value.price }
                   dashup={ props.dashup }
-                  onChange={ (v) => setValue('price', v) }
+                  onChange={ (f, v) => setValue('price', v) }
                 />
               </div>
               { props.value.type === 'subscription' && (
@@ -125,7 +125,7 @@ const FieldProduct = (props = {}) => {
                     page={ props.page }
                     value={ variation.price }
                     dashup={ props.dashup }
-                    onChange={ (v) => setValue(`variations.${i}.price`, v) }
+                    onChange={ (f, v) => setValue(`variations.${i}.price`, v) }
                   />
 
                   <div className="d-flex">
