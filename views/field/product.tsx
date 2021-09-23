@@ -2,8 +2,7 @@
 // import dependencies
 import React from 'react';
 import shortid from 'shortid';
-import { Form } from 'react-bootstrap';
-import { View, Select } from '@dashup/ui';
+import { Form, View, Select } from '@dashup/ui';
 
 // text field
 const FieldProduct = (props = {}) => {

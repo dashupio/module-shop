@@ -1,7 +1,7 @@
 
 // import dependencies
 import React from 'react';
-import { Form, Dropdown, DropdownButton } from 'react-bootstrap';
+import { Form, Dropdown, DropdownButton } from '@dashup/ui';
 
 // text field
 const FieldDiscount = (props = {}) => {

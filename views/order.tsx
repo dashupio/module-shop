@@ -92,11 +92,17 @@ const ShopOrder = (props = {}) => {
     // check order
     if (!props.order) return;
 
-    // find order
-    dashup.page(page.get('data.order.form')).findById(props.order).then((order) => {
-      setOrder(order);
+    // order
+    if (typeof props.order === 'string') {
+      // find order
+      dashup.page(page.get('data.order.form')).findById(props.order).then((order) => {
+        setOrder(order);
+        setReady(true);
+      });
+    } else {
+      setOrder(props.order);
       setReady(true);
-    });
+    }
   }, [props.order])
 
   // return jsx
@@ -119,7 +125,7 @@ const ShopOrder = (props = {}) => {
         </div>
 
         { !!(shipping || billing) && (
-          <>
+          <div className={ getClass('orderShort', '') }>
             <div className="card">
               { !!billing && (
                 <div className="card-header">
@@ -160,25 +166,27 @@ const ShopOrder = (props = {}) => {
             </div>
 
             <hr />
-          </>
+          </div>
         ) }
         
-        { !!getOrder('field.payments') && (
-          getOrder('field.payments').map((payment, i) => {
-            // return jsx
-            return (
-              <dashup.View
-                key={ `payment-${i}` }
-                view="view"
-                type="connect"
-                page={ page }
-                struct={ payment.type }
-                dashup={ dashup }
-                payment={ payment }
-              />
-            );
-          })
-        ) }
+        <div className={ getClass('orderInfo', '') }>
+          { !!getOrder('field.payments') && (
+            getOrder('field.payments').map((payment, i) => {
+              // return jsx
+              return (
+                <dashup.View
+                  key={ `payment-${i}` }
+                  view="view"
+                  type="connect"
+                  page={ page }
+                  struct={ payment.type }
+                  dashup={ dashup }
+                  payment={ payment }
+                />
+              );
+            })
+          ) }
+        </div>
       </div>
       
       <div className={ getClass('orderSidebar', 'dashup-checkout-cart col-lg-5 order-0 order-lg-1') }>
@@ -273,7 +281,7 @@ const ShopOrder = (props = {}) => {
               Total
             </div>
             <div className={ getClass('orderTotalAmount', 'col-4 text-end')}>
-              ${ ((page.total(getOrder('field.products', [])) + getShipping()) - getDiscount()).toFixed(2) }
+              <b>${ ((page.total(getOrder('field.products', [])) + getShipping()) - getDiscount()).toFixed(2) }</b>
             </div>
           </div>
         </div>

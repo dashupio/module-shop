@@ -274,14 +274,16 @@ const ShopCheckout = (props = {}) => {
             return (
               <span key={ `step-${s}` } className={ step === s.toLowerCase() ? 'text-bold' : '' }>
                 { s }
-                { i < steps.length - 1 ? ' > ' : '' }
+                { i < steps.length - 1 && (
+                  <i className={ getClass('checkoutSep', 'mx-3 fa fa-fw fa-chevron-right') } />
+                ) }
               </span>
             );
           }) }
         </div>
 
         { !!(shipping || billing) && (
-          <>
+          <div className={ getClass('checkoutShort', '') }>
             <div className="card">
               { !!billing && (
                 <div className="card-header">
@@ -322,7 +324,7 @@ const ShopCheckout = (props = {}) => {
             </div>
 
             <hr />
-          </>
+          </div>
         ) }
 
         { !!error && (
@@ -335,7 +337,7 @@ const ShopCheckout = (props = {}) => {
         
         { /* INFORMATION */ }
         { step === 'information' && (
-          <div>
+          <div className={ getClass('checkoutInfo', '') }>
             <div className={ getClass('checkoutContact', 'dashup-contact') }>
               <label className={ getClass('checkoutContactTitle', 'text-large form-label') }>
                 Contact
@@ -368,7 +370,7 @@ const ShopCheckout = (props = {}) => {
 
         { /* SHIPPING */ }
         { step === 'shipping' && hasShipping() && (
-          <div>
+          <div className={ getClass('checkoutShipping', '') }>
             <div className="form-check me-sm-2">
               <input type="checkbox" className="form-check-input" id="shipping-is-billing" onChange={ (e) => setIsBilling(e.target.checked) } defaultChecked={ isBilling } />
               <label className="form-check-label" htmlFor="shipping-is-billing">
@@ -400,38 +402,36 @@ const ShopCheckout = (props = {}) => {
         
         { /* PAYMENT */ }
         { step === 'payment' && (
-          <div>
-            <div className="card mb-3">
-              { (props.page.get('connects') || []).map((source, i) => {
-                // return jsx
-                return (
-                  <div key={ `source-${i}` }>
-                    <div className="card-header">
-                      <div className="form-check">
-                        <input type="radio" id={ source.uuid } name="payment-type" className="form-check-input" checked />
-                        <label className="form-check-label" htmlFor={ source.uuid }>
-                          { source.type }
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="card-body">
-                      <dashup.View
-                        type="connect"
-                        view="pay"
-                        struct={ source.type }
-                        connect={ source }
-                        
-                        page={ page }
-                        value={ shipping }
-                        dashup={ dashup }
-                        setPayment={ (v) => v ? setPayment({ type : source.type, uuid : source.uuid, value : v }) : setPayment(null) }
-                      />
+          <div className={ getClass('checkoutPayment', 'card mb-3') }>
+            { (props.page.get('connects') || []).map((source, i) => {
+              // return jsx
+              return (
+                <div key={ `source-${i}` }>
+                  <div className="card-header">
+                    <div className="form-check">
+                      <input type="radio" id={ source.uuid } name="payment-type" className="form-check-input" checked />
+                      <label className="form-check-label" htmlFor={ source.uuid }>
+                        { source.type }
+                      </label>
                     </div>
                   </div>
-                );
-              }) }
-            </div>
+
+                  <div className="card-body">
+                    <dashup.View
+                      type="connect"
+                      view="pay"
+                      struct={ source.type }
+                      connect={ source }
+                      
+                      page={ page }
+                      value={ shipping }
+                      dashup={ dashup }
+                      setPayment={ (v) => v ? setPayment({ type : source.type, uuid : source.uuid, value : v }) : setPayment(null) }
+                    />
+                  </div>
+                </div>
+              );
+            }) }
           </div>
         ) }
         
@@ -444,7 +444,7 @@ const ShopCheckout = (props = {}) => {
               </button>
             ) }
             { !!props.back && steps.map(s => s.toLowerCase()).indexOf(step) === 1 && (
-              <a href={ props.back } className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0') }>
+              <a href={ props.back } onClick={ (e) => props.onBack && props.onBack(e) } className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0') }>
                 Back
               </a>
             ) }
@@ -545,34 +545,36 @@ const ShopCheckout = (props = {}) => {
           { Object.entries(page.totals()).map((entry, i) => {
             // return jsx
             return (
-              <div key={ `entry-${entry[0]}` } className={ getClass('checkoutSubtotalLine', 'row mb-2') }>
+              <div key={ `entry-${entry[0]}` } className={ getClass('checkoutSubtotalLine', `row${(page.discount(page.total()) || page.get('data.order.shipping')) ? ' mb-2' : ''}`) }>
                 <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                   { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
                 </div>
                 <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
-                  <b>${ parseFloat(entry[1] || 0).toFixed(2) }</b>
+                  ${ parseFloat(entry[1] || 0).toFixed(2) }
                 </div>
               </div>
             );
           }) }
           { !!page.discount(page.total()) && (
-            <div className={ getClass('checkoutSubtotalLine', 'row mb-2') }>
+            <div className={ getClass('checkoutSubtotalLine', `row${page.get('data.order.shipping') ? ' mb-2' : ''}`) }>
               <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                 Discount
               </div>
               <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
-                <b>${ page.discount().toFixed(2) }</b>
+                ${ page.discount().toFixed(2) }
               </div>
             </div>
           ) }
           { !!page.get('data.order.shipping') && (
-            <div className={ getClass('checkoutSubtotalLine', 'row mb-2') }>
+            <div className={ getClass('checkoutSubtotalLine', 'row') }>
               <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
                 Shipping
               </div>
               <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
                 { page.shipping() ? (
-                  <b>${ page.shipping().toFixed(2) }</b>
+                  <>
+                    ${ page.shipping().toFixed(2) }
+                  </>
                 ) : (
                   <i>N/A</i>
                 ) }
@@ -587,10 +589,10 @@ const ShopCheckout = (props = {}) => {
         <div className={ getClass('checkoutTotal', 'dashup-total') }>
           <div className={ getClass('checkoutTotalLine', 'row mb-2') }>
             <div className={ getClass('checkoutTotalLabel', 'col-8 d-flex align-items-center') }>
-              Total
+              <b>Total</b>
             </div>
             <div className={ getClass('checkoutTotalAmount', 'col-4 text-end')}>
-              ${ ((page.total() + page.shipping()) - page.discount(page.total())).toFixed(2) }
+              <b>${ ((page.total() + page.shipping()) - page.discount(page.total())).toFixed(2) }</b>
             </div>
           </div>
         </div>
