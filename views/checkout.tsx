@@ -1,105 +1,54 @@
 
 // import react
+import dotProp from 'dot-prop';
 import React, { useRef, useState, useEffect } from 'react';
+import { Box, Grid, Stack, Icon, useTheme, Divider, Card, CardContent, TextField, CardMedia, Typography, LoadingButton } from '@dashup/ui';
 
 // shop checkout
 const ShopCheckout = (props = {}) => {
+  // use theme
+  const theme = useTheme();
+
   // page/dashup
   const { page, dashup } = props;
 
-  // set dashup
-  const auth = page.get('data.auth') ? dashup.page(page.get('data.auth')) : props.auth;
-  const cart = page.cart;
+  // get auth stuff
+  const authPage = page.get('data.auth') ? dashup.page(page.get('data.auth')) : props.auth;
+  const authForm = authPage && dashup.page(authPage.get('data.form'));
 
-  // form
-  const authForm = auth && dashup.page(auth.get('data.form'));
+  // email field
+  const authEmailField = authForm && (authForm.get('data.fields') || []).find((f) => f.uuid === authPage.get('data.field.email'));
 
-  // emailField
-  const emailField = authForm && (authForm.get('data.fields') || []).find((f) => f.uuid === auth.get('data.field.email'));
+  // get order page
+  const orderPage   = page.get('data.order.form') ? dashup.page(page.get('data.order.form')) : props.order;
+  const orderFields = (page.get('data.order.fields') || []).map((uuid) => (orderPage.get('data.fields') || []).find((f) => f.uuid === uuid));
 
-  // state
-  const [step, setStep] = useState('information');
+  // get product page
+  const productPage   = page.get('data.product.form') ? dashup.page(page.get('data.product.form')) : props.product;
+  const productFields = Object.keys(page.get('data.product') || {}).reduce((accum, k) => {
+    accum[k] = (productPage.get('data.fields') || []).find((f) => f.uuid === page.get(`data.product.${k}`));
+    return accum;
+  }, {});
+
+  // default fields
+  const emailField = (orderPage.get('data.fields') || []).find((f) => f.uuid === page.get('data.order.email'));
+
+  // discount
+  const [discount, setDiscount] = useState('');
+
+  // cart page
+  const cartPage = page.cart;
+
+  // info
+  const [info, setInfo] = useState(props.info || {
+    email : props.email || (authPage?.exists() && authEmailField ? authPage.user.get(authEmailField.name || authEmailField.uuid) : ''),
+  });
+
   const [error, setError] = useState(null);
-  const [login, setLogin] = useState(false);
-  const [email, setEmail] = useState(
-    props.email || (auth?.exists() && emailField ? auth.user.get(emailField.name || emailField.uuid) : '')
-  );
   const [payment, setPayment] = useState(false);
   const [loading, setLoading] = useState(null);
   const [updated, setUpdated] = useState(new Date());
-  const [billing, setBilling] = useState(null);
-  const [shipping, setShipping] = useState(null);
-  const [isBilling, setIsBilling] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [discountError, setDiscountError] = useState(null);
-
-  // refs
-  const discountRef = useRef(null);
-  
-  // get class
-  const getClass = (name, def) => {
-    // get classes
-    const classes = props.classes || {};
-
-    // check name
-    if (!classes[name]) return def;
-
-    // return props
-    return classes[name];
-  };
-
-  // get product field
-  const getProduct = (product, key, d) => {
-    // product field
-    const productField = page.field('product', key.split('.')[0]) || {};
-
-    // return
-    return product.product.get(`${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
-  };
-
-  // get discount
-  const getDiscount = (key, d) => {
-    // product field
-    const discountField = page.field('discount', key.split('.')[0]) || {};
-
-    // return
-    return page.cart.get('discount').get(`${discountField.name || discountField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
-  };
-
-  // has shipping
-  const hasShipping = () => {
-    // get products
-    const products = page.cart.get('products');
-
-    // field
-    const productField = page.field('product', 'field');
-
-    // return has shipping
-    return !!productField.shipping;
-  };
-
-  // on back
-  const onBack = (e) => {
-    // prevent
-    e.preventDefault();
-    e.stopPropagation();
-
-    // get index
-    const index = steps.map((s) => s.toLowerCase()).indexOf(step);
-    
-    // update step
-    setStep(steps[index - 1].toLowerCase());
-  };
-
-  // on continue
-  const onContinue = (e) => {
-    // prevent
-    e.preventDefault();
-    e.stopPropagation();
-
-    // set state
-    setStep(steps[steps.map(s => s.toLowerCase()).indexOf(step) + 1].toLowerCase());
-  }
 
   // on complete
   const onComplete = async (e) => {
@@ -128,17 +77,14 @@ const ShopCheckout = (props = {}) => {
       page   : page.get('_id'),
       dashup : dashup.get('_id'),
     }, 'checkout.complete', {
-      user : auth?.exists() ? auth.user.get('_id') : null,
       payment,
       products,
+
+      user     : authPage?.exists() ? authPage.user.get('_id') : null,
       discount : page.cart.get('discount') ? page.cart.get('discount').get('_id') : null,
-      shipping : {
-        address : isBilling ? billing : shipping,
-      },
       information : {
-        user : auth?.exists() ? auth.user.get('_id') : null,
-        email,
-        address : billing,
+        user : authPage?.exists() ? authPage.user.get('_id') : null,
+        ...info
       },
     });
 
@@ -177,30 +123,27 @@ const ShopCheckout = (props = {}) => {
     const discountCodeField = page.field('discount', 'code') || {};
     const discountUsesField = page.field('discount', 'uses') || {};
 
+    // check code
+    if (!discount?.length) return;
+
     // loading discount
     setLoading('discount');
 
-    // get code
-    const code = discountRef.current?.value;
-
     // check code
-    if (!code?.length) return;
-
-    // check code
-    let discount = props.dashup.page(page.get('data.discount.form')).where({
-      [discountCodeField.name || discountCodeField.uuid] : code,
+    let actualDiscount = props.dashup.page(page.get('data.discount.form')).where({
+      [discountCodeField.name || discountCodeField.uuid] : discount,
     });
 
     // uses
     if (discountUsesField) {
-      discount = discount.gt(discountUsesField.name || discountUsesField.uuid, 0);
+      actualDiscount = actualDiscount.gt(discountUsesField.name || discountUsesField.uuid, 0);
     }
 
     // find one
-    discount = await discount.findOne();
+    actualDiscount = await actualDiscount.findOne();
 
     // set discount
-    if (!discount) {
+    if (!actualDiscount) {
       // discount
       setLoading(null);
       setDiscountError('Code not found');
@@ -210,7 +153,7 @@ const ShopCheckout = (props = {}) => {
     }
 
     // set discount
-    await page.code(discount);
+    await page.code(actualDiscount);
 
     // loading discount
     setLoading(null);
@@ -253,351 +196,265 @@ const ShopCheckout = (props = {}) => {
     };
   }, [page && page.get('_id')]);
 
-  // set steps
-  const steps = hasShipping() ? ['Cart', 'Information', 'Shipping', 'Payment'] : ['Cart', 'Information', 'Payment'];
+  // user info
+  const customerStep = (
+    <Box mb={ 3 } { ...(props.CustomerProps || {}) }>
+      <Typography variant="subtitle1" component="h2" sx={ {
+        fontWeight : 'bold',
+      } } { ...(props.PaymentTitle || {}) }>
+        Your Information
+      </Typography>
+      <Typography variant="subtitle1" component="h4" sx={ {
+        mb : 2,
+      } } { ...(props.PaymentSubtitle || {}) }>
+        Please fill out your information
+      </Typography>
+
+      { !!emailField && (
+        <dashup.View
+          type="field"
+          view="input"
+          struct="email"
+
+          page={ page }
+          field={ emailField }
+          value={ info?.email }
+          dashup={ dashup }
+          readOnly={ !!props.email }
+          onChange={ (f, value) => setInfo({ ...info, email : value }) }
+        />
+      ) }
+      { orderFields.map((field) => {
+        // return jsx
+        return (
+          <dashup.View
+            type="field"
+            view="input"
+            struct={ field.type }
+    
+            page={ page }
+            field={ field }
+            value={ info[field.name || field.uuid] }
+            dashup={ dashup }
+            onChange={ (f, value) => setInfo({ ...info, [field.name || field.uuid] : value }) }
+          />
+        );
+      }) }
+    </Box>
+  );
+
+  // payment sources
+  const paymentSources = (props.page.get('connects') || []);
+  const paymentSource = paymentSources[0];
+
+  // steps
+  const paymentStep = (
+    <>
+      <Box my={ 2 }>
+        <Divider />
+      </Box>
+      <Box { ...(props.PaymentProps || {}) }>
+        <Typography variant="subtitle1" component="h2" sx={ {
+          fontWeight : 'bold',
+        } } { ...(props.PaymentTitle || {}) }>
+          Payment Method
+        </Typography>
+        <Typography variant="subtitle1" component="h4" sx={ {
+          mb : 2,
+        } } { ...(props.PaymentSubtitle || {}) }>
+          Choose Payment Method
+        </Typography>
+        <Stack spacing={ 2 } direction="row" width="100%" sx={ {
+          mb : 2,
+        } } { ...(props.PaymentStackProps || {}) }>
+          { paymentSources.map((source) => {
+            // return jsx
+            return (
+              <Card key={ `payment-${source.uuid}` } sx={ {
+                flex            : 1,
+                color           : paymentSource?.uuid === source.uuid && theme.palette.primary?.main && theme.palette.getContrastText(theme.palette.primary?.main),
+                maxWidth        : 180,
+                alignItems      : 'center',
+                justifyContent  : 'center',
+                backgroundColor : paymentSource?.uuid === source.uuid && 'primary.main',
+              } } { ...(props.PaymentButtonProps || {}) }>
+                <CardContent>
+                  { source.icon ? (
+                    <Icon icon={ source.icon } />
+                  ) : source.type }
+                </CardContent>
+                <Box />
+              </Card>
+            );
+          }) }
+        </Stack>
+        { !!paymentSource && (
+          <dashup.View
+            type="connect"
+            view="pay"
+            struct={ paymentSource.type }
+            connect={ paymentSource }
+            
+            page={ page }
+            value={ payment }
+            dashup={ dashup }
+            setPayment={ (v) => v ? setPayment({
+              type  : paymentSource.type,
+              uuid  : paymentSource.uuid,
+              value : v,
+            }) : setPayment(null) }
+          />
+        ) }
+      </Box>
+    </>
+  );
 
   // return jsx
   return (
-    <div className={ getClass('checkout', 'dashup-checkout row') }>
-    
-      { /* CHECKOUT MAIN */ }
-      <div className={ getClass('checkoutMain', 'dashup-checkout-main col-lg-7 order-1 order-lg-0') }>
+    <Grid container spacing={ 2 } { ...(props.ContainerProps || {}) }>
+      <Grid item sm={ 12 } md={ 7 } { ...(props.StartProps || {}) }>
         { !!props.logo && (
-          <div className={ getClass('checkoutLogo', 'dashup-checkout-logo text-center') }>
-            <img src={ props.logo } className={ getClass('checkoutLogoImg', 'w-25 margin-auto') } />
-          </div>
+          <Box textAlign="center" py={ 3 } { ...(props.LogoProps || {}) }>
+            <Box component="img" maxWidth={ 240 } mx="auto" src={ props.logo } { ...(props.LogoImgProps || {}) } />
+          </Box>
         ) }
-      
-        <div className={ getClass('checkoutSteps', 'dashup-checkout-logo text-center mt-3 mb-5') }>
-          { steps.map((s, i) => {
+        { customerStep }
+        { paymentStep }
+        <Box my={ 2 }>
+          <Divider />
+        </Box>
+        <Box display="flex" flexDirection="row" { ...(props.CompleteProps || {}) }>
+          <LoadingButton variant="contained" size="large" color="success" loading={ completing } disabled={ !!completing || !payment } onClick={ (e) => onComplete(e) } sx={ {
+            ml : 'auto',
+          } } { ...(props.CompleteButtonProps || {}) }>
+            { props.completeButtonText || 'Checkout' }
+          </LoadingButton>
+        </Box>
+      </Grid>
+      <Grid item sm={ 12 } md={ 5 } { ...(props.CartProps || {}) } sx={ {
+        display       : 'flex',
+        flexDirection : 'column',
+      } }>
+        
+        <Stack spacing={ 2 }>
+          { (cartPage.get('products') || []).map((line, i) => {
+            // get product obj
+            const parsedProduct = Object.keys(productFields).reduce((accum, key) => {
+              // field
+              const productField = productFields[key];
+              
+              // get value
+              const productValue = productField && line.product && line.product.get(productField.name || productField.uuid);
+
+              // return
+              if (productValue) accum[key] = productValue;
+
+              // return accum
+              return accum;
+            }, {});
+
             // return jsx
-            return (
-              <span key={ `step-${s}` } className={ step === s.toLowerCase() ? 'text-bold' : '' }>
-                { s }
-                { i < steps.length - 1 && (
-                  <i className={ getClass('checkoutSep', 'mx-3 fa fa-fw fa-chevron-right') } />
+            return props.CartItem ? (
+              <props.CartItem key={ `product-${i}` } { ...line } parsed={ parsedProduct } />
+            ) : (
+              <Card key={ `product-${i}` }>
+                { !!parsedProduct.image && (          
+                  <CardMedia
+                    alt={ parsedProduct.title }
+                    image={ dotProp.get(parsedProduct, 'image.0.thumbs.2x-sq.url') }
+                    component="img"
+                  />
                 ) }
-              </span>
+                <CardContent>
+                  <Typography component="div" variant="h5">
+                    { (line.count || 1).toLocaleString() }
+                    { ' ' }
+                    <Icon type="fas" icon="times" />
+                    { ' ' }
+                    <b>{ parsedProduct.title }</b>
+                  </Typography>
+                  { !!line?.opts?.title && (
+                    <Typography component="div" variant="subtitle1" gutterBottom>
+                      { line.opts.title }
+                    </Typography>
+                  ) }
+                  <Typography component="div" variant="subtitle1">
+                    { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
+                    { ' ' }
+                    { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
+                      dotProp.get(parsedProduct, 'field.period') || 'Monthly'
+                    ) }
+                  </Typography>
+                </CardContent>
+                <Box />
+              </Card>
             );
           }) }
-        </div>
+        </Stack>
 
-        { !!(shipping || billing) && (
-          <div className={ getClass('checkoutShort', '') }>
-            <div className="card">
-              { !!billing && (
-                <div className="card-header">
-                  <div className="row">
-                    <div className="col-5">
-                      <b>
-                        <small>
-                          Bill to
-                        </small>
-                      </b>
-                    </div>
-                    <div className="col-7">
-                      <small className="text-overflow">
-                        { billing.formatted }
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              ) }
-              { !!shipping || !!(isBilling && billing) && (
-                <div className="card-header">
-                  <div className="row">
-                    <div className="col-5">
-                      <b>
-                        <small>
-                          Ship to
-                        </small>
-                      </b>
-                    </div>
-                    <div className="col-7">
-                      <small className="text-overflow">
-                        { (isBilling ? billing : shipping).formatted }
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              ) }
-            </div>
-
-            <hr />
-          </div>
-        ) }
-
-        { !!error && (
-          <div className={ getClass('checkoutAlert', 'dashup-checkout-alert alert alert-danger mb-4') }>
-            { error }
-          </div>
-        ) }
-
-        { /* CHECKOUT STEPS */ }
+        <Box display="flex">
+          <TextField
+            label="Discount Code"
+            onChange={ (e) => setDiscount(e.target.value) }
+            fullWidth
+            InputProps={ {  
+              readOnly : !!page.discount(page.total()),
+            } }
+          />
+          <LoadingButton ml={ 2 } loading={ loading === 'discount' } color={ page.discount(page.total()) ? 'error' : undefined } onClick={ (e) => page.discount(page.total()) ? onRemoveDiscount(e) : onDiscount(e) }>
+            { page.discount(page.total()) ? (
+              <Icon type="fas" icon="times" />
+            ) : loading === 'discount' ? 'Applying...' : 'Apply' }
+          </LoadingButton>
+        </Box>
         
-        { /* INFORMATION */ }
-        { step === 'information' && (
-          <div className={ getClass('checkoutInfo', '') }>
-            <div className={ getClass('checkoutContact', 'dashup-contact') }>
-              <label className={ getClass('checkoutContactTitle', 'text-large form-label') }>
-                Contact
-                { !props.email && !!(auth && !auth.exists()) && (
-                  <a href="#!" className={ getClass('checkoutContactExtra', 'ms-auto') } onClick={ (e) => setLogin(true) }>
-                    Login or Register
-                  </a>
-                ) }
-              </label>
-              <input className={ getClass('checkoutInput', 'form-control') } placeholder="Email" value={ email } readOnly={ (auth && auth.exists()) || props.email } type="email" onChange={ (e) => setEmail(e.target.value) } />
-            </div>
-
-            <hr />
-
-            <dashup.View
-              type="field"
-              view="input"
-              struct="address"
-
-              field={ {
-                label : 'Billing Address',
-              } }
-              page={ page }
-              value={ billing }
-              dashup={ dashup }
-              onChange={ (f, value) => setBilling(value) }
-            />
-          </div>
-        ) }
-
-        { /* SHIPPING */ }
-        { step === 'shipping' && hasShipping() && (
-          <div className={ getClass('checkoutShipping', '') }>
-            <div className="form-check me-sm-2">
-              <input type="checkbox" className="form-check-input" id="shipping-is-billing" onChange={ (e) => setIsBilling(e.target.checked) } defaultChecked={ isBilling } />
-              <label className="form-check-label" htmlFor="shipping-is-billing">
-                Same as Billing
-              </label>
-            </div>
-            
-            { !isBilling && (
-              <>
-                <hr />
-
-                <dashup.View
-                  type="field"
-                  view="input"
-                  struct="address"
-
-                  field={ {
-                    label : 'Shipping Address',
-                  } }
-                  page={ page }
-                  value={ shipping }
-                  dashup={ dashup }
-                  onChange={ (f, value) => setShipping(value) }
-                />
-              </>
-            ) }
-          </div>
-        ) }
-        
-        { /* PAYMENT */ }
-        { step === 'payment' && (
-          <div className={ getClass('checkoutPayment', 'card mb-3') }>
-            { (props.page.get('connects') || []).map((source, i) => {
-              // return jsx
-              return (
-                <div key={ `source-${i}` }>
-                  <div className="card-header">
-                    <div className="form-check">
-                      <input type="radio" id={ source.uuid } name="payment-type" className="form-check-input" checked />
-                      <label className="form-check-label" htmlFor={ source.uuid }>
-                        { source.type }
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="card-body">
-                    <dashup.View
-                      type="connect"
-                      view="pay"
-                      struct={ source.type }
-                      connect={ source }
-                      
-                      page={ page }
-                      value={ shipping }
-                      dashup={ dashup }
-                      setPayment={ (v) => v ? setPayment({ type : source.type, uuid : source.uuid, value : v }) : setPayment(null) }
-                    />
-                  </div>
-                </div>
-              );
-            }) }
-          </div>
-        ) }
-        
-        { /* ACTIONS */ }
-        <div className={ getClass('checkoutComplete', 'dashup-checkout-complete row') }>
-          <div className={ getClass('checkoutCompleteBack', 'col-6') }>
-            { steps.map(s => s.toLowerCase()).indexOf(step) > 1 && (
-              <button className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0') } onClick={ (e) => onBack(e) }>
-                Back
-              </button>
-            ) }
-            { !!props.back && steps.map(s => s.toLowerCase()).indexOf(step) === 1 && (
-              <a href={ props.back } onClick={ (e) => props.onBack && props.onBack(e) } className={ getClass('checkoutCompleteBtn', 'btn btn-link ps-0') }>
-                Back
-              </a>
-            ) }
-          </div>
-          <div className={ getClass('checkoutCompleteBtnWrap', 'col-6 text-end') }>
-            { step !== 'payment' ? (
-              <button className={ getClass('checkoutCompleteBtn', 'btn btn-primary') } onClick={ (e) => onContinue(e) }>
-                Continue
-              </button>
-
-            ) : (
-              <button className={ `${getClass('checkoutCompleteBtn', 'btn btn-success')} ${!!payment && !completing ? '' : 'disabled'}` } onClick={ (e) => onComplete(e) }>
-                { completing ? 'Completing...' : 'Complete Order' }
-              </button>
-            ) }
-          </div>
-        </div>
-        
-        { /* / STEPS */ }
-      </div>
-      
-      <div className={ getClass('checkoutSidebar', 'dashup-checkout-cart col-lg-5 order-0 order-lg-1') }>
-
-        { /* CART */ }
-        { (cart.get('products') || []).map((product, i) => {
-          // return jsx
-          return (
-            <div key={ `product-${i}` } className={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-              { !!getProduct(product, 'image.0.thumbs.2x-sq.url') && (
-                <div className={ getClass('cartItemImage', 'col-4') }>
-                  <img src={ getProduct(product, 'image.0.thumbs.2x-sq.url') } className={ getClass('cartItemImageImg', 'img-fluid') } />
-                </div>
-              ) }
-              <div className={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
-                <div className="w-100">
-                  <h2 className={ `${getClass('cartItemTitle', 'dashup-item-title')}${product?.opts?.title ? ' mb-0' : ''}` }>
-                    <small>
-                      { product.count.toLocaleString() }
-                      <i className={ getClass('cartItemPriceSep', 'fal fa-fw fa-times mx-1') } />
-                    </small>
-                    <b>{ getProduct(product, 'title') }</b>
-                  </h2>
-                  { !!product?.opts?.title && (
-                    <p className={ getClass('cartItemTitle', 'dashup-item-variation') }>
-                      <small>{ product.opts.title }</small>
-                    </p>
-                  ) }
-                  <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
-                    <span>
-                      ${ (parseFloat(getProduct(product, 'field.price') || 0) * product.count).toFixed(2) }
-                    </span>
-                    { getProduct(product, 'field.type') === 'subscription' && (
-                      <small className={ getClass('cartItemPeriod', 'dashup-item-period ms-2') }>
-                        { getProduct(product, 'field.period') || 'Monthly' }
-                      </small>
-                    ) }
-                  </p>
-                </div>
-              </div>
-            </div>
-          )
-        }) }
-
-        <hr />
-
-        { /* DISCOUNT */ }
-        { !!props.page.get('data.discount.model') && (
-          <div className={ getClass('checkoutDiscount', 'dashup-discount d-flex flex-row') }>
-            <div className={ getClass('checkoutDiscountInputWrap', 'flex-1') }>
-              <input className={ getClass('checkoutDiscountInput', 'form-control') } ref={ discountRef } placeholder="Discount code" />
-            </div>
-            <div className={ getClass('checkoutDiscountBtnWrap', 'flex-0 ms-3') }>
-              <button className={ `${getClass('checkoutButton', 'btn btn-block btn-primary')}${loading === 'discount' ? ' disabled' : ''}` } onClick={ (e) => onDiscount(e) }>
-                { loading === 'discount' ? 'Applying...' : 'Apply' }
-              </button>
-            </div>
-          </div>
-        ) }
-        { !!cart.get('discount') && (
-          <div className="mt-2 d-flex align-items-center">
-            <b className="me-2">
-              { getDiscount('code') }
-            </b>
-            { getDiscount('discount.type', 'amount') === 'amount' ? '$' : '' }{ parseFloat(getDiscount('discount.value') || 0).toFixed(2) }{ getDiscount('discount.type', 'amount') === 'amount' ? '' : '%' }
-            Off
-            <button className={ `btn btn-sm btn-secondary ms-auto${loading === 'discount' ? ' disabled' : ''}` } onClick={ (e) => onRemoveDiscount(e) }>
-              <i className={ loading === 'discount' ? 'fa fa-spinner fa-spin' : 'fa fa-times' } />
-            </button>
-          </div>
-        ) }
-
-        { !!props.page.get('data.discount.model') && (
-          <hr />
-        ) }
-
-        { /* SUB TOTAL */ }
-        <div className={ getClass('checkoutSubtotal', 'dashup-subtotal') }>
+        <Stack spacing={ 0 } mt="auto">
           { Object.entries(page.totals()).map((entry, i) => {
+
             // return jsx
             return (
-              <div key={ `entry-${entry[0]}` } className={ getClass('checkoutSubtotalLine', `row${(page.discount(page.total()) || page.get('data.order.shipping')) ? ' mb-2' : ''}`) }>
-                <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
-                  { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
-                </div>
-                <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
-                  ${ parseFloat(entry[1] || 0).toFixed(2) }
-                </div>
-              </div>
+              <React.Fragment key={ `entry-${entry[0]}` }>
+                { i > 0 && (
+                  <Divider />
+                ) }
+                <Box display="flex" alignItems="center" justifyContent="space-between" p={ 2 }>
+                  <Typography variant="subtitle1">
+                    { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    { `$${parseFloat(entry[1] || 0).toFixed(2)}` }
+                  </Typography>
+                </Box>
+              </React.Fragment>
             );
           }) }
           { !!page.discount(page.total()) && (
-            <div className={ getClass('checkoutSubtotalLine', `row${page.get('data.order.shipping') ? ' mb-2' : ''}`) }>
-              <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
-                Discount
-              </div>
-              <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
-                ${ page.discount().toFixed(2) }
-              </div>
-            </div>
+            <>
+              <Divider />
+              <Box display="flex" alignItems="center" justifyContent="space-between" p={ 2 }>
+                <Typography variant="subtitle1">
+                  Discount
+                </Typography>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  { `$${page.discount().toFixed(2)}` }
+                </Typography>
+              </Box>
+            </>
           ) }
-          { !!page.get('data.order.shipping') && (
-            <div className={ getClass('checkoutSubtotalLine', 'row') }>
-              <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
-                Shipping
-              </div>
-              <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
-                { page.shipping() ? (
-                  <>
-                    ${ page.shipping().toFixed(2) }
-                  </>
-                ) : (
-                  <i>N/A</i>
-                ) }
-              </div>
-            </div>
-          ) }
-        </div>
 
-        <hr />
+          <Divider />
+          <Box display="flex" alignItems="center" justifyContent="space-between" px={ 2 } py={ 3 }>
+            <Typography variant="h5">
+              Total
+            </Typography>
+            <Typography variant="h5" fontWeight="bold">
+              { `$${((page.total() + page.shipping()) - page.discount(page.total())).toFixed(2)}` }
+            </Typography>
+          </Box>
+        </Stack>
 
-        { /* TOTAL */ }
-        <div className={ getClass('checkoutTotal', 'dashup-total') }>
-          <div className={ getClass('checkoutTotalLine', 'row mb-2') }>
-            <div className={ getClass('checkoutTotalLabel', 'col-8 d-flex align-items-center') }>
-              <b>Total</b>
-            </div>
-            <div className={ getClass('checkoutTotalAmount', 'col-4 text-end')}>
-              <b>${ ((page.total() + page.shipping()) - page.discount(page.total())).toFixed(2) }</b>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </Grid>
+    </Grid>
   );
 };
 

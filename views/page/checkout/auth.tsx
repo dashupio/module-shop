@@ -1,7 +1,7 @@
 
 // import react
 import React from 'react';
-import { Select } from '@dashup/ui';
+import { TextField, MenuItem } from '@dashup/ui';
 
 // create page model config
 const PageCheckoutAuth = (props = {}) => {
@@ -28,15 +28,20 @@ const PageCheckoutAuth = (props = {}) => {
 
   // return jsx
   return (
-    <div className="mb-3">
-      <label className="form-label">
-        Auth Page
-      </label>
-      <Select options={ getAuth() } defaultValue={ getAuth().filter((f) => f.selected) } onChange={ (val) => props.setData('auth', val?.value) } isClearable />
-      <small>
-        Used for checkout login/auth.
-      </small>
-    </div>
+    <TextField
+      label="Choose Model"
+      value={ props.page.get('data.auth') }
+      select
+      onChange={ (e) => props.setData('auth', e.target.value) }
+      fullWidth
+      helperText="The authentication this checkout can use."
+    >
+      { getAuth().map((option) => (
+        <MenuItem key={ option.value } value={ option.value }>
+          { option.label }
+        </MenuItem>
+      ))}
+    </TextField>
   );
 };
 

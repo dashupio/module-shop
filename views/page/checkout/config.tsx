@@ -1,7 +1,7 @@
 
 // import react
 import React from 'react';
-import { Select } from '@dashup/ui';
+import { TextField, MenuItem, Divider } from '@dashup/ui';
 
 // create page model config
 const PageCheckoutConfig = (props = {}) => {
@@ -23,26 +23,29 @@ const PageCheckoutConfig = (props = {}) => {
 
   // order fields
   const orderFields = [{
+    name : 'User',
+    type : 'model',
+    help : 'Order user',
+  }, {
     name : 'Email',
     type : 'email',
+    help : 'Email for Checkout',
   }, {
-    name : 'Address',
-    type : 'address',
-  }, {
-    name : 'Field',
+    name : 'Order',
     type : 'order',
+    help : 'Order field type'
   }, {
     name : 'Total',
     type : 'money',
-  }, {
-    name : 'Products',
-    type : 'model',
-  }, {
-    name : 'User',
-    type : 'model',
+    help : 'Total order amount',
   }, {
     name : 'Discount',
     type : 'money',
+    help : 'Total order discount',
+  }, {
+    name : 'Products',
+    type : 'model',
+    help : 'Order products',
   }];
 
   // order fields
@@ -136,45 +139,85 @@ const PageCheckoutConfig = (props = {}) => {
   // return jsx
   return (
     <>
-      <div className="mb-3">
-        <label className="form-label">
-          { label } Model
-        </label>
-        <Select options={ getModels(type) } defaultValue={ getModels(type).filter((f) => f.selected) } onChange={ (val) => props.setData(`${type}.model`, val?.value) } isClearable />
-        <small>
-          Used for checkout { label }s.
-        </small>
-      </div>
+      <TextField
+        label={ `${label} Model`}
+        value={ getModels(type).filter((f) => f.selected).map((v) => v.value) }
+        select
+        onChange={ (e) => props.setData(`${type}.model`, e.target.value) }
+        fullWidth
+        helperText={ `Used for checkout ${label}s` }
+      >
+        { getModels(type).map((option) => (
+          <MenuItem key={ option.value } value={ option.value }>
+            { option.label }
+          </MenuItem>
+        )) }
+      </TextField>
 
       { !!props.page.get(`data.${type}.model`) && (
-        <div className="mb-3">
-          <label className="form-label">
-            { label } Form
-          </label>
-          <Select options={ getForms(type) } defaultValue={ getForms(type).filter((f) => f.selected) } onChange={ (val) => props.setData(`${type}.form`, val?.value) } isClearable />
-          <small>
-            Used for checkout { label }s.
-          </small>
-        </div>
+        <TextField
+          label={ `${label} Form`}
+          value={ getForms(type).filter((f) => f.selected).map((v) => v.value) }
+          select
+          onChange={ (e) => props.setData(`${type}.form`, e.target.value) }
+          fullWidth
+          helperText={ `Used for checkout ${label}s` }
+        >
+          { getForms(type).map((option) => (
+            <MenuItem key={ option.value } value={ option.value }>
+              { option.label }
+            </MenuItem>
+          )) }
+        </TextField>
       ) }
 
       { !!props.page.get(`data.${type}.model`) && !!props.page.get(`data.${type}.form`) && (
         <>
-          <hr />
+          <Divider />
           { fields.map((field) => {
             // return jsx
             return (
-              <div key={ `group-${type}-${`${field.name || ''}`.toLowerCase()}` } className="mb-3">
-                <label className="form-label">
-                  { field.name } Field
-                </label>
-                <Select options={ getField(type, `${field.name || ''}`.toLowerCase(), field.type) } defaultValue={ getField(type, `${field.name || ''}`.toLowerCase(), field.type).filter((f) => f.selected) } onChange={ (value) => onField(type, `${field.name || ''}`.toLowerCase(), value?.value) } isClearable />
-              </div>
+              <TextField
+                key={ `group-${type}-${`${field.name || ''}`.toLowerCase()}` }
+                label={ `${field.name} Field`}
+                value={ getField(type, `${field.name || ''}`.toLowerCase(), field.type).filter((v) => v.selected).map((v) => v.value)[0] || '' }
+                select
+                onChange={ (e) => onField(type, `${field.name || ''}`.toLowerCase(), e.target.value) }
+                fullWidth
+                helperText={ field.help || `Used for checkout ${label}s` }
+              >
+                { getField(type, `${field.name || ''}`.toLowerCase(), field.type).map((option) => (
+                  <MenuItem key={ option.value } value={ option.value }>
+                    { option.label }
+                  </MenuItem>
+                )) }
+              </TextField>
             );
           }) }
         </>
       ) }
-      <hr />
+      { type === 'order' && (
+        <>
+          <Divider />
+          <TextField
+            label="Extra checkout fields"
+            value={ getField('order', 'fields').filter((f) => f.selected).map((v) => v.value) || [] }
+            select
+            onChange={ (e) => onField(type, 'fields', typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value) }
+            fullWidth
+            helperText="Extra fields to include in checkout"
+            SelectProps={ {
+              multiple : true,
+            } }
+          >
+            { getField('order', 'fields').map((option) => (
+              <MenuItem key={ option.value } value={ option.value }>
+                { option.label }
+              </MenuItem>
+            )) }
+          </TextField>
+        </>
+      ) }
     </>
   );
 };

@@ -1,6 +1,7 @@
 
 import dotProp from 'dot-prop';
 import React, { useState, useEffect } from 'react';
+import { Box, Grid, Stack, Icon, Divider, Card, CardContent, CardMedia, Typography } from '@dashup/ui';
 
 // shop order
 const ShopOrder = (props = {}) => {
@@ -11,24 +12,19 @@ const ShopOrder = (props = {}) => {
   // expound props
   const { dashup, page } = props;
 
-  // fields
-  const orderField = page.field('order', 'field');
+  // get order page
+  const orderPage   = page.get('data.order.form') ? dashup.page(page.get('data.order.form')) : props.order;
+  const orderFields = (page.get('data.order.fields') || []).map((uuid) => (orderPage.get('data.fields') || []).find((f) => f.uuid === uuid));
 
-  // shipping
-  const billing  = page.get(`${orderField.name || orderField.uuid}.information.address`);
-  const shipping = page.get(`${orderField.name || orderField.uuid}.shipping.address`);
+  // get product page
+  const productPage   = page.get('data.product.form') ? dashup.page(page.get('data.product.form')) : props.product;
+  const productFields = Object.keys(page.get('data.product') || {}).reduce((accum, k) => {
+    accum[k] = (productPage.get('data.fields') || []).find((f) => f.uuid === page.get(`data.product.${k}`));
+    return accum;
+  }, {});
 
-  // get class
-  const getClass = (name, def) => {
-    // get classes
-    const classes = props.classes || {};
-
-    // check name
-    if (!classes[name]) return def;
-
-    // return props
-    return classes[name];
-  };
+  // default fields
+  const emailField = (orderPage.get('data.fields') || []).find((f) => f.uuid === page.get('data.order.email'));
 
   // get order field
   const getOrder = (key, d) => {
@@ -78,15 +74,6 @@ const ShopOrder = (props = {}) => {
     return 0;
   };
 
-  // get product field
-  const getProduct = (product, key, d) => {
-    // product field
-    const productField = page.field('product', key.split('.')[0]) || {};
-
-    // return
-    return dotProp.get(product.product, `${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
-  };
-
   // use effect
   useEffect(() => {
     // check order
@@ -103,73 +90,71 @@ const ShopOrder = (props = {}) => {
       setOrder(props.order);
       setReady(true);
     }
-  }, [props.order])
+  }, [props.order]);
 
-  // return jsx
-  return (
-    <div className={ getClass('order', 'dashup-order row') }>
-    
-      { /* ORDER MAIN */ }
-      <div className={ getClass('orderMain', 'dashup-checkout-main col-lg-7 order-1 order-lg-0') }>
+  // user info
+  const customerStep = !!order && (
+    <Box mb={ 3 } { ...(props.CustomerProps || {}) }>
+      <Typography variant="subtitle1" component="h2" sx={ {
+        fontWeight : 'bold',
+      } } { ...(props.PaymentTitle || {}) }>
+        Your Information
+      </Typography>
+      <Typography variant="subtitle1" component="h4" sx={ {
+        mb : 2,
+      } } { ...(props.PaymentSubtitle || {}) }>
+        Information filled out for this order.
+      </Typography>
 
-        { !!props.logo && (
-          <div className={ getClass('orderLogo', 'dashup-order-logo text-center') }>
-            <img src={ props.logo } className={ getClass('orderLogoImg', 'w-25 margin-auto') } />
-          </div>
-        ) }
-      
-        <div className={ getClass('orderId', 'dashup-order-id text-center mt-3 mb-5') }>
-          <span className="text-bold">
-            Order #{ order ? order.get('_id') : 'Loading...' }
-          </span>
-        </div>
+      { !!emailField && (
+        <dashup.View
+          type="field"
+          view="input"
+          struct="email"
+          readOnly
 
-        { !!(shipping || billing) && (
-          <div className={ getClass('orderShort', '') }>
-            <div className="card">
-              { !!billing && (
-                <div className="card-header">
-                  <div className="row">
-                    <div className="col-5">
-                      <b>
-                        <small>
-                          Bill to
-                        </small>
-                      </b>
-                    </div>
-                    <div className="col-7">
-                      <small className="text-overflow">
-                        { billing.formatted }
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              ) }
-              { !!shipping && (
-                <div className="card-header">
-                  <div className="row">
-                    <div className="col-5">
-                      <b>
-                        <small>
-                          Ship to
-                        </small>
-                      </b>
-                    </div>
-                    <div className="col-7">
-                      <small className="text-overflow">
-                        { shipping.formatted }
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              ) }
-            </div>
+          page={ page }
+          field={ emailField }
+          value={ getOrder('field.information.email', '') }
+          dashup={ dashup }
+        />
+      ) }
+      { orderFields.map((field) => {
+        // return jsx
+        return (
+          <dashup.View
+            type="field"
+            view="input"
+            struct={ field.type }
+            readOnly
 
-            <hr />
-          </div>
-        ) }
-        
-        <div className={ getClass('orderInfo', '') }>
+            page={ page }
+            field={ field }
+            value={ order.get(field.name || field.uuid) }
+            dashup={ dashup }
+          />
+        );
+      }) }
+    </Box>
+  );
+
+  // steps
+  const paymentStep = !!order && (
+    <>
+      <Box my={ 2 }>
+        <Divider />
+      </Box>
+      <Box { ...(props.PaymentProps || {}) }>
+        <Typography variant="subtitle1" component="h2" sx={ {
+          fontWeight : 'bold',
+        } } { ...(props.PaymentTitle || {}) }>
+          Payment Method
+        </Typography>
+        <Typography variant="subtitle1" component="h4" sx={ {
+          mb : 2,
+        } } { ...(props.PaymentSubtitle || {}) }>
+          Choose Payment Method
+        </Typography>
           { !!getOrder('field.payments') && (
             getOrder('field.payments').map((payment, i) => {
               // return jsx
@@ -186,108 +171,130 @@ const ShopOrder = (props = {}) => {
               );
             })
           ) }
-        </div>
-      </div>
-      
-      <div className={ getClass('orderSidebar', 'dashup-checkout-cart col-lg-5 order-0 order-lg-1') }>
-        { !!ready && getOrder('field.products', []).map((product, i) => {
-          // return jsx
-          return (
-            <div key={ `product-${i}` } className={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-              { !!getProduct(product, 'image.0.thumbs.2x-sq.url') && (
-                <div className={ getClass('cartItemImage', 'col-4') }>
-                  <img src={ getProduct(product, 'image.0.thumbs.2x-sq.url') } className={ getClass('cartItemImageImg', 'img-fluid') } />
-                </div>
-              ) }
-              <div className={ getClass('cartItemInfo', 'col d-flex align-items-center') }>
-                <div className="w-100">
-                  <h2 className={ `${getClass('cartItemTitle', 'dashup-item-title')}${product?.opts?.title ? ' m-0' : ''}` }>
-                    <small>
-                      { product.count.toLocaleString() }
-                      <i className={ getClass('cartItemPriceSep', 'fal fa-fw fa-times mx-1') } />
-                    </small>
-                    <b>{ getProduct(product, 'title') }</b>
-                  </h2>
-                  { !!product?.opts?.title && (
-                    <p className={ getClass('cartItemTitle', 'dashup-item-variation') }>
-                      <small>{ product.opts.title }</small>
-                    </p>
-                  ) }
-                  <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
-                    <span>
-                      ${ (parseFloat(getProduct(product, 'field.price') || 0) * product.count).toFixed(2) }
-                    </span>
-                    { getProduct(product, 'field.type') === 'subscription' && (
-                      <small className={ getClass('cartItemPeriod', 'dashup-item-period ms-2') }>
-                        { getProduct(product, 'field.period') || 'Monthly' }
-                      </small>
-                    ) }
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        }) }
+      </Box>
+    </>
+  );
 
-        <hr />
-
-        { !!ready && (
-          <div className={ getClass('orderSubtotal', 'dashup-subtotal') }>
-            { Object.entries(page.totals(getOrder('field.products', []))).map((entry, i) => {
-              // return jsx
-              return (
-                <div key={ `entry-${i}` } className={ getClass('checkoutSubtotalLine', 'row mb-2') }>
-                  <div className={ getClass('checkoutSubtotalLabel', 'col-8') }>
-                    { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
-                  </div>
-                  <div className={ getClass('checkoutSubtotalAmount', 'col-4 text-end')}>
-                    <b>${ parseFloat(entry[1] || 0).toFixed(2) }</b>
-                  </div>
-                </div>
-              );
-            }) }
-            { !!getDiscount() && (
-              <div className={ getClass('orderSubtotalLine', 'row mb-2') }>
-                <div className={ getClass('orderSubtotalLabel', 'col-8') }>
-                  Discount
-                </div>
-                <div className={ getClass('orderSubtotalAmount', 'col-4 text-end')}>
-                  <b>${ getDiscount().toFixed(2) }</b>
-                </div>
-              </div>
-            ) }
-            { !!page.get('data.order.shipping') && (
-              <div className={ getClass('orderSubtotalLine', 'row mb-2') }>
-                <div className={ getClass('orderSubtotalLabel', 'col-8') }>
-                  Shipping
-                </div>
-                <div className={ getClass('orderSubtotalAmount', 'col-4 text-end')}>
-                  { page.shipping() ? (
-                    <b>${ page.shipping().toFixed(2) }</b>
-                  ) : (
-                    <i>N/A</i>
-                  ) }
-                </div>
-              </div>
-            ) }
-          </div>
+  // return jsx
+  return (
+    <Grid container spacing={ 2 } { ...(props.ContainerProps || {}) }>
+      <Grid item sm={ 12 } md={ 7 } { ...(props.StartProps || {}) }>
+        { !!props.logo && (
+          <Box textAlign="center" py={ 3 } { ...(props.LogoProps || {}) }>
+            <Box component="img" maxWidth={ 240 } mx="auto" src={ props.logo } { ...(props.LogoImgProps || {}) } />
+          </Box>
         ) }
-
-        <hr />
+        { customerStep }
+        { paymentStep }
+      </Grid>
+      <Grid item sm={ 12 } md={ 5 } { ...(props.CartProps || {}) } sx={ {
+        display       : 'flex',
+        flexDirection : 'column',
+      } }>
         
-        <div className={ getClass('orderTotal', 'dashup-total') }>
-          <div className={ getClass('orderTotalLine', 'row mb-2') }>
-            <div className={ getClass('orderTotalLabel', 'col-8 d-flex align-items-center') }>
-              Total
-            </div>
-            <div className={ getClass('orderTotalAmount', 'col-4 text-end')}>
-              <b>${ ((page.total(getOrder('field.products', [])) + getShipping()) - getDiscount()).toFixed(2) }</b>
-            </div>
-          </div>
-        </div>
+        <Stack spacing={ 2 }>
+          { (getOrder('field.products', []) || []).map((line, i) => {
+            // get product obj
+            const parsedProduct = Object.keys(productFields).reduce((accum, key) => {
+              // field
+              const productField = productFields[key];
+              
+              // get value
+              const productValue = productField && line.product && line.product[productField.name || productField.uuid];
 
-      </div>
-    </div>
+              // return
+              if (productValue) accum[key] = productValue;
+
+              // return accum
+              return accum;
+            }, {});
+
+            // return jsx
+            return props.CartItem ? (
+              <props.CartItem key={ `product-${i}` } { ...line } parsed={ parsedProduct } />
+            ) : (
+              <Card key={ `product-${i}` }>
+                { !!parsedProduct.image && (          
+                  <CardMedia
+                    alt={ parsedProduct.title }
+                    image={ dotProp.get(parsedProduct, 'image.0.thumbs.2x-sq.url') }
+                    component="img"
+                  />
+                ) }
+                <CardContent>
+                  <Typography component="div" variant="h5">
+                    { (line.count || 1).toLocaleString() }
+                    { ' ' }
+                    <Icon type="fas" icon="times" />
+                    { ' ' }
+                    <b>{ parsedProduct.title }</b>
+                  </Typography>
+                  { !!line?.opts?.title && (
+                    <Typography component="div" variant="subtitle1" gutterBottom>
+                      { line.opts.title }
+                    </Typography>
+                  ) }
+                  <Typography component="div" variant="subtitle1">
+                    { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
+                    { ' ' }
+                    { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
+                      dotProp.get(parsedProduct, 'field.period') || 'Monthly'
+                    ) }
+                  </Typography>
+                </CardContent>
+                <Box />
+              </Card>
+            );
+          }) }
+        </Stack>
+        
+        <Stack spacing={ 0 } mt="auto">
+          { Object.entries(page.totals(getOrder('field.products', []))).map((entry, i) => {
+
+            // return jsx
+            return (
+              <React.Fragment key={ `entry-${entry[0]}` }>
+                { i > 0 && (
+                  <Divider />
+                ) }
+                <Box display="flex" alignItems="center" justifyContent="space-between" p={ 2 }>
+                  <Typography variant="subtitle1">
+                    { entry[0] !== 'simple' ? `${entry[0].charAt(0).toUpperCase()}${entry[0].slice(1)}` : '' }
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    { `$${parseFloat(entry[1] || 0).toFixed(2)}` }
+                  </Typography>
+                </Box>
+              </React.Fragment>
+            );
+          }) }
+          { !!getDiscount() && (
+            <>
+              <Divider />
+              <Box display="flex" alignItems="center" justifyContent="space-between" p={ 2 }>
+                <Typography variant="subtitle1">
+                  Discount
+                </Typography>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  { `$${getDiscount().toFixed(2)}` }
+                </Typography>
+              </Box>
+            </>
+          ) }
+
+          <Divider />
+          <Box display="flex" alignItems="center" justifyContent="space-between" px={ 2 } py={ 3 }>
+            <Typography variant="h5">
+              Total
+            </Typography>
+            <Typography variant="h5" fontWeight="bold">
+              { `$${((page.total(getOrder('field.products', [])) + getShipping()) - getDiscount()).toFixed(2)}` }
+            </Typography>
+          </Box>
+        </Stack>
+
+      </Grid>
+    </Grid>
   );
 };
 
