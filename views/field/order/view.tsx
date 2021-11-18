@@ -2,6 +2,7 @@
 // import dependencies
 import React from 'react';
 import dotProp from 'dot-prop';
+import { Box, Stack, Chip, Avatar, Icon } from '@dashup/ui';
 
 // text field
 const FieldOrderView = (props = {}) => {
@@ -27,28 +28,36 @@ const FieldOrderView = (props = {}) => {
 
   // return text field
   return (
-    <div>
+    <Stack spacing={ 1 } alignItems="center" direction="row">
       { (value.payments || []).map((payment, i) => {
         // return jsx
         return (
-          <span key={ `payment-${i}` } className={ `me-2 btn btn-sm btn-${['succeeded', 'active'].includes(payment.status) ? 'success' : 'danger'}` }>
-            <i className={ `fab fa-${payment.type} me-2` } />
-            ${ parseFloat(((payment.amount || [])[0] || 0) - parseFloat((payment.discount || [])[0] || 0)).toFixed(2) } { (payment.amount || [])[1] } { (payment.amount || [])[2] }
-          </span>
+          <Chip
+            key={ `payment-${i}` }
+            color={ ['succeeded', 'active'].includes(payment.status) ? 'success' : 'error' }
+            label={ `${parseFloat(((payment.amount || [])[0] || 0) - parseFloat((payment.discount || [])[0] || 0)).toFixed(2)} ${(payment.amount || [])[1] || ''} ${(payment.amount || [])[2] || ''}` }
+            avatar={ (
+              <Avatar>
+                <Icon type="fab" icon={ payment.type } />
+              </Avatar>
+            ) }
+          />
         );
       }) }
       { (value.products || []).map((product, i) => {
         // return jsx
         return (
-          <span key={ `product-${i}` }>
-            { i !== 0 ? ', ' : '' }
-            { (product.count || 1).toLocaleString() }
-            <i className="fa fa-times me-2" />
-            <b>{ getProduct(product, 'title') }</b>
-          </span>
+          <Chip
+            key={ `product-${i}` }
+            color="primary"
+            label={ `${(product.count || 1).toLocaleString()}x ${getProduct(product, 'title')}` }
+            avatar={ (
+              <Avatar image={ getProduct(product, 'image') } name={ getProduct(product, 'title') } />
+            ) }
+          />
         );
       }) }
-    </div>
+    </Stack>
   );
 };
 

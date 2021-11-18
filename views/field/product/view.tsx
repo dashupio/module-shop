@@ -1,6 +1,7 @@
 
 // import dependencies
 import React from 'react';
+import { Box } from '@dashup/ui';
 
 // text field
 const FieldProductView = (props = {}) => {
@@ -17,9 +18,9 @@ const FieldProductView = (props = {}) => {
 
   // return text field
   return (
-    <div>
+    <Box>
       { types[value.type] } ${ parseFloat(value.price || 0).toFixed(2) }
-    </div>
+    </Box>
   );
 };
 

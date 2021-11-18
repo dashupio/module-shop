@@ -1,51 +1,57 @@
 
 // import dependencies
-import React from 'react';
-import { Form, Dropdown, DropdownButton } from '@dashup/ui';
+import React, { useState } from 'react';
+import { Icon, TextField, InputAdornment, IconButton, Menu, MenuItem } from '@dashup/ui';
 
 // text field
 const FieldDiscount = (props = {}) => {
+  // state
+  const [menu, setMenu] = useState(null);
+
   // types
   const types = {
-    amount  : 'Amount ($)',
-    percent : 'Percentage (%)',
+    amount  : 'dollar-sign',
+    percent : 'percent',
   };
 
-  // return text field
   return (
-    <Form.Group className={ props.noLabel ? '' : 'mb-3' } controlId={ props.field.uuid }>
-      { !props.noLabel && (
-        <Form.Label>
-          { props.field.label || (
-            <a href="#!" onClick={ (e) => !props.onConfig(props.field) && e.preventDefault() }>
-              <i>Set Label</i>
-            </a>
-          ) }  
-        </Form.Label>
-      ) }
-      <div className="d-flex">
-        <DropdownButton className="me-2" title={ types[props.value?.type || 'amount'] }>
-          <Dropdown.Item onClick={ () => props.onChange(props.field, { ...(props.value || {}), type : 'amount'}) }>
-            Amount ($)
-          </Dropdown.Item>
-          <Dropdown.Item onClick={ () => props.onChange(props.field, { ...(props.value || {}), type : 'percent'}) }>
-            Percentage (%)
-          </Dropdown.Item>
-        </DropdownButton>
-        <Form.Control
-          type="number"
-          value={ props.value?.value }
-          onChange={ (e) => props.onChange(props.field, { ...(props.value || {}), value : parseFloat(e.target.value) }) }
-          readOnly={ props.readOnly }
-          placeholder={ props.field.placeholder || `Enter ${props.field.label}` }
-          />
-      </div>
-      { !!props.field.help && !props.noLabel && (
-        <Form.Text className="form-help">
-          { props.field.help }
-        </Form.Text>
-      ) }
-    </Form.Group>
+    <>
+      <TextField
+        type="number"
+        value={ props.value?.value }
+        onChange={ (e) => props.onChange(props.field, { ...(props.value || {}), value : parseFloat(e.target.value) }) }
+        helperText={ props.field.help }
+        placeholder={ props.field.placeholder || `Enter ${props.field.label}` }
+        fullWidth
+
+        InputProps={ {
+          ...props.InputProps,
+          readOnly       : !!props.readOnly,
+          startAdornment : (
+            <InputAdornment position="start">
+              <IconButton
+                edge="start"
+                onClick={ (e) => setMenu(e.target) }
+              >
+                <Icon type="fas" icon={ types[props.value?.type || 'amount'] } />
+              </IconButton>
+            </InputAdornment>
+          )
+        } }
+      />
+      <Menu
+        open={ !!menu }
+        onClose={ (e) => setMenu(null) }
+        anchorEl={ menu }
+      >
+        <MenuItem onClick={ (e) => props.onChange(props.field, { ...(props.value || {}), type : 'amount' }) }>
+          Amount
+        </MenuItem>
+        <MenuItem onClick={ (e) => props.onChange(props.field, { ...(props.value || {}), type : 'percent' }) }>
+          Percentage
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

@@ -2,7 +2,7 @@
 // import dependencies
 import React from 'react';
 import dotProp from 'dot-prop';
-import { Form, View, Select } from '@dashup/ui';
+import { Box, Form, View, Select, TextField, MenuItem } from '@dashup/ui';
 
 // text field
 const FieldOrder = (props = {}) => {
@@ -42,6 +42,56 @@ const FieldOrder = (props = {}) => {
     return dotProp.get(product.product, `${productField.name || productField.uuid}${key.split('.').length > 1 ? `.${key.split('.').slice(1).join('.')}` : ''}`) || d;
   };
 
+  // field body
+  const fieldBody = (
+    <Box flex={ 1 } pr={ 2 } pb={ 2 } pt={ 1 }>
+      <TextField
+        label="Checkout Module"
+        value={ props.value?.checkout || '' }
+        onChange={ (e) => setValue('checkout', e.target.value) }
+        select
+        fullWidth
+      >
+        { getCheckout().map((option) => {
+          // return jsx
+          return (
+            <MenuItem key={ option.value } value={ option.value }>
+              { option.label }
+            </MenuItem>
+          );
+        }) }
+      </TextField>
+    </Box>
+  );
+
+  // return jsx
+  return (
+    <TextField
+      sx={ {
+        '& label': {
+          color : props.field.color?.hex,
+        },
+        '& fieldset': {
+          borderColor : props.field.color?.hex,
+        },
+      } }
+      type="hidden"
+      size={ props.size }
+      label={ props.field.label }
+      value="working"
+      margin={ props.margin }
+      onChange={ (e) => props.onChange(props.field, e.target.value) }
+      fullWidth
+      helperText={ props.field.help }
+      InputProps={ {
+        readOnly       : !!props.readOnly,
+        startAdornment : fieldBody,
+        ...props.InputProps,
+      } }
+      placeholder={ props.field.placeholder || `Enter ${props.field.label}` }
+    />
+  );
+
   // return text field
   return (
     <Form.Group className={ props.noLabel ? '' : 'mb-3' } controlId={ props.field.uuid }>
@@ -56,12 +106,6 @@ const FieldOrder = (props = {}) => {
               ) }  
             </Form.Label>
           ) }
-        </div>
-        <div className="card-body">
-          <label className="form-label">
-            Checkout Module
-          </label>
-          <Select options={ getCheckout() } value={ getCheckout().filter((c) => c.selected) } onChange={ (v) => setValue('checkout', v?.value) } isClearable />
         </div>
         { !!props.value?.checkout && (
           <div className="card-body pt-0">

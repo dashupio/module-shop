@@ -2,7 +2,8 @@
 // import dependencies
 import React from 'react';
 import shortid from 'shortid';
-import { Form, View, Select } from '@dashup/ui';
+import dotProp from 'dot-prop';
+import { Box, TextField, MenuItem, Card, CardHeader, View, Button, IconButton, Icon, CardContent } from '@dashup/ui';
 
 // text field
 const FieldProduct = (props = {}) => {
@@ -45,123 +46,181 @@ const FieldProduct = (props = {}) => {
     const value = props.value || {};
 
     // set value
-    value[k] = v;
+    dotProp.set(value, k, v);
 
     // update
     props.onChange(props.field, value);
   };
 
-  // return text field
-  return (
-    <Form.Group className={ props.noLabel ? '' : 'mb-3' } controlId={ props.field.uuid }>
-      <div className="card">
-        <div className="card-header">
-          { !props.noLabel && (
-            <Form.Label>
-              { props.field.label || (
-                <a href="#!" onClick={ (e) => !props.onConfig(props.field) && e.preventDefault() }>
-                  <i>Set Label</i>
-                </a>
-              ) }  
-            </Form.Label>
-          ) }
-        </div>
-        <div className="card-body">
-          <div className="mb-3">
-            <label className="form-label">
-              { props.field.label || 'Product' } Type
-            </label>
-            <Select options={ getType() } value={ getType().filter((t) => t.selected) } onChange={ (v) => setValue('type', v?.value) } isClearable />
-          </div>
+  // field body
+  const fieldBody = (
+    <Box flex={ 1 } pr={ 2 } pb={ 2 } pt={ 1 }>
+      <TextField
+        label={ `${props.field.label || 'Product'} Type` }
+        value={ props.value?.type || '' }
+        select
+        onChange={ (e) => setValue('type', e.target.value) }
+        fullWidth
+      >
+        { getType().map((option) => {
+          // return jsx
+          return (
+            <MenuItem key={ option.value } value={ option.value }>
+              { option.label }
+            </MenuItem>
+          );
+        }) }
+      </TextField>
+      { !!props.value?.type && (
+        <View
+          type="field"
+          view="input"
+          struct="money"
+          fullWidth
 
-          { !!props.value?.type && (
-            <div className="d-flex">
-              <div className="flex-1">
-                <View
-                  type="field"
-                  view="input"
-                  struct="money"
-
-                  field={ {
-                    label : `${props.field.label || 'Product'} Price`,
-                  } }
-                  page={ props.page }
-                  value={ props.value.price }
-                  dashup={ props.dashup }
-                  onChange={ (f, v) => setValue('price', v) }
-                />
-              </div>
-              { props.value.type === 'subscription' && (
-                <div className="flex-1 ms-2">
-                  <label className="form-label">
-                    { props.field.label || 'Product' } Duration
-                  </label>
-                  <Select options={ getPeriod() } value={ getPeriod().filter((t) => t.selected) } onChange={ (v) => setValue('period', v?.value) } isClearable />
-                </div>
-              ) }
-            </div>
-          ) }
-        </div>
-        { props.value?.type === 'variable' && (
-          <>
-            <div className="card-header">
-              <label className="m-0">
-                { props.field.label || 'Product' } Variations
-              </label>
-            </div>
-            { (props.value?.variations || []).map((variation, i) => {
-              // return variation
-              return (
-                <div key={ `variation-${variation.uuid || i}` } className="card-body">
-                  <View
-                    type="field"
-                    view="input"
-                    struct="money"
-
-                    field={ {
-                      label : `${props.field.label || 'Product'} Variation Price`,
-                    } }
-                    page={ props.page }
-                    value={ variation.price }
-                    dashup={ props.dashup }
-                    onChange={ (f, v) => setValue(`variations.${i}.price`, v) }
-                  />
-
-                  <div className="d-flex">
-                    <button type="button" className="btn btn-danger ms-auto" onClick={ (e) => {
-                      // splice
-                      const variations = props.value.variations || [];
-
-                      // splice
-                      variations.splice(i, 1);
-
-                      // update
-                      setValue('variations', variations);
-                    } }>
-                      Remove Variation
-                    </button>
-                  </div>
-                </div>
-              );
-            }) }
-          
-            <div className="card-footer d-flex">
-              <button type="button" className="btn btn-success ms-auto" onClick={ (e) => setValue('variations', [...(props.value?.variations || []), {
-                uuid : shortid(),
-              }]) }>
-                Add Variation
-              </button>
-            </div>
-          </>
-        ) }
-
-      </div>
-      { !!props.field.help && !props.noLabel && (
-        <Form.Text className="form-help">
-          { props.field.help }
-        </Form.Text>
+          field={ {
+            label : `${props.field.label || 'Product'} Price`,
+          } }
+          page={ props.page }
+          value={ props.value?.price }
+          dashup={ props.dashup }
+          onChange={ (f, v) => setValue('price', v) }
+        />
       ) }
-    </Form.Group>
+      { props.value?.type === 'subscription' && (
+        <TextField
+          label={ `${props.field.label || 'Product'} Duration` }
+          value={ props.value?.duration }
+          select
+          onChange={ (e) => setValue('period', e.target.value) }
+          fullWidth
+        >
+          { getPeriod().map((option) => {
+            // return jsx
+            return (
+              <MenuItem key={ option.value } value={ option.value }>
+                { option.label }
+              </MenuItem>
+            );
+          }) }
+        </TextField>
+      ) }
+      { props.value?.type === 'variable' && (
+        <>
+          { (props.value?.variations || []).map((variation, i) => {
+            // return variation
+            return (
+              <Card key={ `model-${variation.uuid}` } sx={ {
+                mt : 1,
+              } } variant="outlined">
+                <CardHeader
+                  title={ `${variation.name || `Variation #${i}`}${variation.price ? ` $${variation.price.toFixed(2)}` : ''}` }
+                  action={ (
+                    <>
+                      <IconButton onClick={ (e) => setValue(`variations.${i}.open`, !variation.open) }>
+                        <Icon type="fas" icon={ variation.open ? 'times' : 'pencil' } />
+                      </IconButton>
+                      <IconButton onClick={ (e) => {
+                        // splice
+                        const variations = props.value.variations || [];
+
+                        // splice
+                        variations.splice(i, 1);
+
+                        // update
+                        setValue('variations', variations);
+                      } } color="error">
+                        <Icon type="fas" icon="trash" />
+                      </IconButton>
+                    </>
+                  ) }
+                />
+                { !!variation.open && (
+                  <CardContent>
+                    <View
+                      type="field"
+                      view="input"
+                      struct="text"
+    
+                      field={ {
+                        label : `${props.field.label || 'Product'} Variation Name`,
+                      } }
+                      page={ props.page }
+                      value={ variation.name }
+                      dashup={ props.dashup }
+                      onChange={ (f, v) => setValue(`variations.${i}.name`, v) }
+                    />
+                    <View
+                      type="field"
+                      view="input"
+                      struct="text"
+    
+                      field={ {
+                        label : `${props.field.label || 'Product'} Variation SKU`,
+                      } }
+                      page={ props.page }
+                      value={ variation.sku }
+                      dashup={ props.dashup }
+                      onChange={ (f, v) => setValue(`variations.${i}.sku`, v) }
+                    />
+                    <View
+                      type="field"
+                      view="input"
+                      struct="money"
+    
+                      field={ {
+                        label : `${props.field.label || 'Product'} Variation Price`,
+                      } }
+                      page={ props.page }
+                      value={ variation.price }
+                      dashup={ props.dashup }
+                      onChange={ (f, v) => setValue(`variations.${i}.price`, parseFloat(v)) }
+                    />
+                  </CardContent>
+                ) }
+                <Box />
+              </Card>
+            );
+          }) }
+        
+          <Box justifyContent="end" mt={ 2 }>
+            <Button color="success" variant="contained" onClick={ (e) => setValue('variations', [...(props.value?.variations || []), {
+              uuid : shortid(),
+            }]) }>
+              Add Variation
+            </Button>
+          </Box>
+        </>
+      ) }
+    </Box>
+  );
+
+  // return jsx
+  return (
+    <TextField
+      sx={ {
+        '& label': {
+          color : props.field.color?.hex,
+        },
+        '& fieldset': {
+          borderColor : props.field.color?.hex,
+        },
+      } }
+      type="hidden"
+      size={ props.size }
+      label={ props.field.label }
+      value="working"
+      margin={ props.margin }
+      onChange={ (e) => props.onChange(props.field, e.target.value) }
+      fullWidth
+      helperText={ props.field.help }
+      InputProps={ {
+        readOnly       : !!props.readOnly,
+        startAdornment : fieldBody,
+        ...props.InputProps,
+      } }
+      placeholder={ props.field.placeholder || `Enter ${props.field.label}` }
+    />
   );
 };
 
