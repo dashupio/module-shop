@@ -2,7 +2,7 @@
 // import react
 import dotProp from 'dot-prop';
 import React, { useRef, useState, useEffect } from 'react';
-import { Box, Grid, Stack, Icon, useTheme, Divider, Card, CardContent, TextField, CardMedia, Typography, LoadingButton } from '@dashup/ui';
+import { Box, Grid, Stack, Icon, useTheme, Divider, Card, CardContent, CardHeader, TextField, CardMedia, Typography, LoadingButton } from '@dashup/ui';
 
 // shop checkout
 const ShopCheckout = (props = {}) => {
@@ -311,7 +311,7 @@ const ShopCheckout = (props = {}) => {
 
   // return jsx
   return (
-    <Grid container spacing={ 2 } { ...(props.ContainerProps || {}) }>
+    <Grid container spacing={ 3 } { ...(props.ContainerProps || {}) }>
       <Grid item sm={ 12 } md={ 7 } { ...(props.StartProps || {}) }>
         { !!props.logo && (
           <Box textAlign="center" py={ 3 } { ...(props.LogoProps || {}) }>
@@ -357,44 +357,55 @@ const ShopCheckout = (props = {}) => {
             return props.CartItem ? (
               <props.CartItem key={ `product-${i}` } { ...line } parsed={ parsedProduct } />
             ) : (
-              <Card key={ `product-${i}` }>
+              <Card key={ `product-${i}` } sx={ {
+                display : 'flex',
+              } } variant="outlined">
                 { !!parsedProduct.image && (          
                   <CardMedia
+                    sx={ {
+                      width : 85,
+                    } }
                     alt={ parsedProduct.title }
                     image={ dotProp.get(parsedProduct, 'image.0.thumbs.2x-sq.url') }
                     component="img"
                   />
                 ) }
-                <CardContent>
-                  <Typography component="div" variant="h5">
-                    { (line.count || 1).toLocaleString() }
-                    { ' ' }
-                    <Icon type="fas" icon="times" />
-                    { ' ' }
-                    <b>{ parsedProduct.title }</b>
-                  </Typography>
-                  { !!line?.opts?.title && (
-                    <Typography component="div" variant="subtitle1" gutterBottom>
-                      { line.opts.title }
-                    </Typography>
+                <CardHeader
+                  sx={ {
+                    flex : 1,
+                  } }
+                  title={ (
+                    <>
+                      { parsedProduct.title }
+                    </>
                   ) }
-                  <Typography component="div" variant="subtitle1">
-                    { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
-                    { ' ' }
-                    { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
-                      dotProp.get(parsedProduct, 'field.period') || 'Monthly'
-                    ) }
-                  </Typography>
-                </CardContent>
+                  subheader={ (
+                    <>
+                      { `x${(line.count || 1).toLocaleString()}` }
+                      { ' ' }
+                      { ' ' }
+                      { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
+                      { ' ' }
+                      { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
+                        dotProp.get(parsedProduct, 'field.period') || 'Monthly'
+                      ) }
+                    </>
+                  ) }
+                />
                 <Box />
               </Card>
             );
           }) }
         </Stack>
 
-        <Box display="flex">
+        <Box my={ 2 }>
+          <Divider />
+        </Box>
+
+        <Stack spacing={ 2 } direction="row">
           <TextField
             label="Discount Code"
+            margin="none"
             onChange={ (e) => setDiscount(e.target.value) }
             fullWidth
             InputProps={ {  
@@ -406,7 +417,7 @@ const ShopCheckout = (props = {}) => {
               <Icon type="fas" icon="times" />
             ) : loading === 'discount' ? 'Applying...' : 'Apply' }
           </LoadingButton>
-        </Box>
+        </Stack>
         
         <Stack spacing={ 0 } mt="auto">
           { Object.entries(page.totals()).map((entry, i) => {

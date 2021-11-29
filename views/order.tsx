@@ -1,7 +1,7 @@
 
 import dotProp from 'dot-prop';
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Stack, Icon, Divider, Card, CardContent, CardMedia, Typography } from '@dashup/ui';
+import { Box, Grid, Stack, Divider, Card, CardHeader, CardMedia, Typography } from '@dashup/ui';
 
 // shop order
 const ShopOrder = (props = {}) => {
@@ -213,35 +213,41 @@ const ShopOrder = (props = {}) => {
             return props.CartItem ? (
               <props.CartItem key={ `product-${i}` } { ...line } parsed={ parsedProduct } />
             ) : (
-              <Card key={ `product-${i}` }>
+              <Card key={ `product-${i}` } sx={ {
+                display : 'flex',
+              } }>
                 { !!parsedProduct.image && (          
                   <CardMedia
+                    sx={ {
+                      width : 85,
+                    } }
                     alt={ parsedProduct.title }
                     image={ dotProp.get(parsedProduct, 'image.0.thumbs.2x-sq.url') }
                     component="img"
                   />
                 ) }
-                <CardContent>
-                  <Typography component="div" variant="h5">
-                    { (line.count || 1).toLocaleString() }
-                    { ' ' }
-                    <Icon type="fas" icon="times" />
-                    { ' ' }
-                    <b>{ parsedProduct.title }</b>
-                  </Typography>
-                  { !!line?.opts?.title && (
-                    <Typography component="div" variant="subtitle1" gutterBottom>
-                      { line.opts.title }
-                    </Typography>
+                <CardHeader
+                  sx={ {
+                    flex : 1,
+                  } }
+                  title={ (
+                    <>
+                      { parsedProduct.title }
+                    </>
                   ) }
-                  <Typography component="div" variant="subtitle1">
-                    { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
-                    { ' ' }
-                    { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
-                      dotProp.get(parsedProduct, 'field.period') || 'Monthly'
-                    ) }
-                  </Typography>
-                </CardContent>
+                  subheader={ (
+                    <>
+                      { `x${(line.count || 1).toLocaleString()}` }
+                      { ' ' }
+                      { ' ' }
+                      { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
+                      { ' ' }
+                      { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
+                        dotProp.get(parsedProduct, 'field.period') || 'Monthly'
+                      ) }
+                    </>
+                  ) }
+                />
                 <Box />
               </Card>
             );

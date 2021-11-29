@@ -57,7 +57,18 @@ export default class CheckoutPage extends Struct {
   get data() {
     // return page data
     return {
-      tabs    : ['Product', 'Orders', 'Auth', 'Discount', 'Connects'],
+      tabs    : ['Display', 'Product', 'Category', 'Orders', 'Auth', 'Discount', 'Connects'],
+      share   : {
+        acls  : ['view'],
+        pages : {
+          'data.order.model'    : false,
+          'data.product.form'   : false,
+          'data.product.model'  : false,
+          'data.category.form'  : false,
+          'data.category.model' : false,
+          'data.discount.model' : false,
+        },
+      },
       default : {
         title : 'The Checkout page requires a couple models in order for data to be submitted to it, do you want us to create those pages page?',
         check : [
@@ -112,11 +123,31 @@ export default class CheckoutPage extends Struct {
                   parent : 'root',
                 },
                 {
+                  by       : 'title',
+                  uuid     : 'categories',
+                  type     : 'model',
+                  name     : 'categories',
+                  form     : '{{ createCategory }}',
+                  model    : '{{ category }}',
+                  order    : 4,
+                  label    : 'Categories', 
+                  parent   : 'root',
+                  multiple : true,
+                },
+                {
                   type   : 'textarea',
                   uuid   : 'description',
                   name   : 'description',
                   label  : 'Description',
-                  order  : 4,
+                  order  : 5,
+                  parent : 'root',
+                },
+                {
+                  type   : 'wysiwyg',
+                  uuid   : 'content',
+                  name   : 'content',
+                  label  : 'Content',
+                  order  : 6,
                   parent : 'root',
                 },
               ],
@@ -171,6 +202,7 @@ export default class CheckoutPage extends Struct {
                   parent : 'root',
                 },
                 {
+                  by       : 'sku',
                   uuid     : 'products',
                   type     : 'model',
                   name     : 'products',
@@ -212,7 +244,7 @@ export default class CheckoutPage extends Struct {
                   uuid   : 'uses',
                   type   : 'number',
                   name   : 'uses',
-                  order  : 0,
+                  order  : 1,
                   label  : 'Uses',
                   parent : 'root',
                 },
@@ -220,13 +252,48 @@ export default class CheckoutPage extends Struct {
                   uuid   : 'discount',
                   type   : 'discount',
                   name   : 'discount',
-                  order  : 0,
+                  order  : 2,
                   label  : 'Discount',
                   parent : 'root',
                 },
               ],
             },
             parent : '{{ discount }}',
+          },
+          {
+            _id    : 'category',
+            type   : 'model',
+            icon   : 'filter fas',
+            name   : 'Categories',
+            parent : '{{ _id }}',
+          },
+          {
+            _id  : 'createCategory',
+            type : 'form',
+            icon : 'plus fas',
+            name : 'Create',
+            data : {
+              model  : '{{ category }}',
+              fields : [
+                {
+                  uuid   : 'title',
+                  type   : 'text',
+                  name   : 'title',
+                  order  : 0,
+                  label  : 'Title',
+                  parent : 'root',
+                },
+                {
+                  uuid   : 'description',
+                  type   : 'textarea',
+                  name   : 'description',
+                  order  : 1,
+                  label  : 'Description',
+                  parent : 'root',
+                },
+              ],
+            },
+            parent : '{{ category }}',
           },
         ],
         replace : {
@@ -240,10 +307,20 @@ export default class CheckoutPage extends Struct {
             products : 'products',
           },
           'data.product' : {
-            form  : '{{ createProduct }}',
-            model : '{{ product }}',
-            field : 'product',
-            title : 'title',
+            form        : '{{ createProduct }}',
+            model       : '{{ product }}',
+            field       : 'product',
+            title       : 'title',
+            image       : 'image',
+            content     : 'content',
+            category    : 'categories',
+            description : 'description',
+          },
+          'data.category' : {
+            form        : '{{ createCategory }}',
+            model       : '{{ category }}',
+            title       : 'title',
+            description : 'description',
           },
           'data.discount' : {
             form     : '{{ createDiscount }}',
@@ -263,15 +340,23 @@ export default class CheckoutPage extends Struct {
   get views() {
     // return object of views
     return {
-      cart     : 'cart',
-      order    : 'order',
-      checkout : 'checkout',
+      cart       : 'cart',
+      order      : 'order',
+      checkout   : 'checkout',
+      products   : 'products',
+      categories : 'categories',
+
+      productCard : 'product/card',
+      productView : 'product/view',
 
       view     : 'page/checkout',
       auth     : 'page/checkout/auth',
       orders   : 'page/checkout/orders',
+      display  : 'page/checkout/display',
       product  : 'page/checkout/product',
+      category : 'page/checkout/category',
       discount : 'page/checkout/discount',
+
     };
   }
 

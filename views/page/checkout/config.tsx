@@ -17,8 +17,14 @@ const PageCheckoutConfig = (props = {}) => {
     name : 'Title',
     type : 'text',
   }, {
+    name : 'Category',
+    type : 'model',
+  }, {
     name : 'Description',
     type : ['textarea', 'wysiwyg'],
+  }, {
+    name : 'Content',
+    type : 'wysiwyg',
   }];
 
   // order fields
@@ -49,6 +55,15 @@ const PageCheckoutConfig = (props = {}) => {
   }];
 
   // order fields
+  const categoryFields = [{
+    name : 'Title',
+    type : 'text',
+  }, {
+    name : 'Description',
+    type : 'textarea',
+  }];
+
+  // order fields
   const discountFields = [{
     name : 'Code',
     type : 'text',
@@ -64,6 +79,7 @@ const PageCheckoutConfig = (props = {}) => {
   const groups = {
     order    : ['Order', orderFields],
     product  : ['Product', productFields],
+    category : ['Category', categoryFields],
     discount : ['Discount', discountFields],
   };
 

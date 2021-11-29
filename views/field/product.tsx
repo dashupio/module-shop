@@ -90,7 +90,7 @@ const FieldProduct = (props = {}) => {
       { props.value?.type === 'subscription' && (
         <TextField
           label={ `${props.field.label || 'Product'} Duration` }
-          value={ props.value?.duration }
+          value={ props.value?.duration || '' }
           select
           onChange={ (e) => setValue('period', e.target.value) }
           fullWidth

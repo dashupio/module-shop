@@ -1,117 +1,17 @@
 
+import dotProp from 'dot-prop';
 import React, { useState, useEffect } from 'react';
+import { Box, Stack, Card, CardMedia, CardHeader, Icon, IconButton } from '@dashup/ui';
 
 // create cart
 const ShopCart = (props = {}) => {
   // state
   const [updated, setUpdated] = useState(new Date());
 
-  // on remove
-  const onRemove = (product) => {
-    // do in cart
-    props.page.remove(product.product, product.opts);
-  };
-
-  // on count
-  const onCount = (product, count) => {
-    // do in cart
-    props.page.add(product.product, parseInt(count), product.opts);
-  };
-
-  // on add
-  const onAdd = (product) => {
-    // on count
-    return onCount(product, product.count + 1);
-  };
-
-  // subtract
-  const onSubtract = (product) => {
-    // on count
-    return onCount(product, product.count - 1);
-  };
-
-  // get class
-  const getClass = (name, def) => {
-    // get classes
-    const classes = props.classes || {};
-
-    // check name
-    if (!classes[name]) return def;
-
-    // return props
-    return classes[name];
-  };
-
   // get products
   const getProducts = () => {
     // get products
     return props.page && props.page.cart ? props.page.cart.get('products') : [];
-  };
-
-  // get field
-  const getField = (name, tld = 'product') => {
-    // return field
-    return props.page.field(tld, name);
-  };
-
-  // get title
-  const getTitle = (product) => {
-    // field
-    const field = getField('title');
-
-    // check field
-    if (!field) return;
-
-    // get product
-    const title = product.product.get(field.name || field.uuid);
-
-    // title
-    if (props.getTitle) return props.getTitle(product, title);
-
-    // title
-    return title;
-  };
-
-  // get image
-  const getImage = (product) => {
-    // field
-    const field = getField('image');
-
-    // check field
-    if (!field) return;
-
-    // images
-    let images = product.product.get(field.name || field.uuid);
-
-    // check
-    if (!images) return;
-
-    // check image
-    if (!Array.isArray(images)) images = [images];
-
-    // title
-    if (props.getImage) return props.getImage(product, images);
-    
-    // return url
-    return (((images[0] || {}).thumbs || {})['2x-sq'] || {}).url;
-  };
-
-  // get price
-  const getPrice = (product) => {
-    // field
-    const field = getField('field');
-
-    // check field
-    if (!field) return 0;
-
-    // get product
-    const prod = product.product.get(field.name || field.uuid);
-
-    // title
-    if (props.getPrice) return props.getPrice(product, prod);
-
-    // return price
-    return parseFloat((prod || {}).price || 0);
   };
 
   // use effect
@@ -135,61 +35,86 @@ const ShopCart = (props = {}) => {
     };
   }, [props.page && props.page.get('_id')]);
 
+  // page
+  const { page, dashup } = props;
+
+  // check dashup/page
+  if (!page || !dashup) return null;
+  
+  // get product page
+  const productPage   = page.get('data.product.form') ? dashup.page(page.get('data.product.form')) : props.product;
+  const productFields = Object.keys(page.get('data.product') || {}).reduce((accum, k) => {
+    accum[k] = (productPage.get('data.fields') || []).find((f) => f.uuid === page.get(`data.product.${k}`));
+    return accum;
+  }, {});
+
   // return jsx
   return (
-    <div className={ getClass('cart', 'dashup-cart') }>
-      { getProducts().map((product, i) => {
+    <Stack spacing={ 2 }>
+      { getProducts().map((line, i) => {
+        // get product obj
+        const parsedProduct = Object.keys(productFields).reduce((accum, key) => {
+          // field
+          const productField = productFields[key];
+          
+          // get value
+          const productValue = productField && line.product && line.product.get(productField.name || productField.uuid);
+
+          // return
+          if (productValue) accum[key] = productValue;
+
+          // return accum
+          return accum;
+        }, {});
+
         // return jsx
         return (
-          <div key={ `product-${product.product.get('_id')}-${i}` } className={ getClass('cartItem', 'dashup-cart-item row mb-3') }>
-            { !!getImage(product) && (
-              <div className={ getClass('cartItemImage', 'col-4') }>
-                <img src={ getImage(product) } className={ getClass('cartItemImageImg', 'img-fluid') } />
-              </div>
+          <Card key={ `product-${i}` } sx={ {
+            display : 'flex',
+          } }>
+            { !!parsedProduct.image && (          
+              <CardMedia
+                sx={ {
+                  width : 85,
+                } }
+                alt={ parsedProduct.title }
+                image={ dotProp.get(parsedProduct, 'image.0.thumbs.2x-sq.url') }
+                component="img"
+              />
             ) }
-            <div className={ getClass('cartItemInfo', 'col') }>
-              <div className="w-100">
-                <h2 className={ `${getClass('cartItemTitle', 'dashup-item-title')}${product?.opts?.title ? ' mb-0' : ''}` }>
-                  { getTitle(product) }
-                </h2>
-                { !!product?.opts?.title && (
-                  <p className={ getClass('cartItemTitle', 'dashup-item-variation') }>
-                    <small>{ product.opts.title }</small>
-                  </p>
-                ) }
-                <p className={ getClass('cartItemPrice', 'dashup-item-price') }>
-                  ${ getPrice(product).toFixed(2) }
-                </p>
-
-                <div className={ getClass('cartItemCart', 'dashup-item-qty row') }>
-                  { !props.disableAmount && (
-                    <div className={ getClass('cartItemQty', 'col-7') }>
-                      
-                      <div className="input-group">
-                        <button className={ getClass('cartItemQtyBtn', 'btn btn-outline-dark') } type="button" onClick={ (e) => onSubtract(product) }>
-                          -
-                        </button>
-                        <input type="number" className={ getClass('cartItemQtyInput', 'form-control text-center') } value={ product.count } onChange={ (e) => onCount(product, e.target.value) } />
-                        <button className={ getClass('cartItemQtyBtn', 'btn btn-outline-dark') } type="button" onClick={ (e) => onAdd(product) }>
-                          +
-                        </button>
-                      </div>
-                    </div>
+            <CardHeader
+              sx={ {
+                flex : 1,
+              } }
+              title={ (
+                <>
+                  { parsedProduct.title }
+                </>
+              ) }
+              subheader={ (
+                <>
+                  { `x${(line.count || 1).toLocaleString()}` }
+                  { ' ' }
+                  { ' ' }
+                  { `$${(parseFloat(dotProp.get(parsedProduct, 'field.price') || 0) * line.count).toFixed(2)}` }
+                  { ' ' }
+                  { dotProp.get(parsedProduct, 'field.type') === 'subscription' && (
+                    dotProp.get(parsedProduct, 'field.period') || 'Monthly'
                   ) }
+                </>
+              ) }
 
-                  <div className={ getClass('cartItemRemove', 'col-5') }>
-                    <button className={ getClass('cartItemRemoveBtn', 'btn btn-block btn-outline-dark') } type="button" onClick={ (e) => onRemove(product) }>
-                      Remove
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
+              action={ (
+                <IconButton onClick={ (e) => props.page.remove(line.product, line.opts) } color="error">
+                  <Icon type="fas" icon="trash" />
+                </IconButton>
+              ) }
+            />
+            <Box />
+          </Card>
         );
       }) }
-    </div>
+    </Stack>
   )
 };
 
